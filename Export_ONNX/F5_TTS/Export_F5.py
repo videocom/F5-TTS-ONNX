@@ -22,7 +22,7 @@ vocos_model_path     = "/Users/dake/Downloads/vocos"                         # T
 onnx_model_A         = "/Users/dake/Downloads/F5_ONNX/F5_Preprocess.onnx"    # The exported onnx model path.
 onnx_model_B         = "/Users/dake/Downloads/F5_ONNX/F5_Transformer.onnx"   # The exported onnx model path.
 onnx_model_C         = "/Users/dake/Downloads/F5_ONNX/F5_Decode.onnx"        # The exported onnx model path.
-python_package_path  = '/Users/dake/PycharmProjects/.venv/lib/python3.11/site-packages/'  # The Python package path.
+python_package_path  = '/Users/dake/PycharmProjects/.venv/lib/python3.11/site-packages'  # The Python package path.
 modified_path        = './modeling_modified/'
 
 reference_audio      = "/Users/dake/Downloads/F5-TTS-main/tests/ref_audio/test_zh_1_ref_short.wav"  # The reference audio path.
