@@ -1,4 +1,3 @@
-import random
 import numpy as np
 import onnxruntime as ort
 import torch
@@ -6,7 +5,6 @@ from librosa import util as librosa_util
 
 # To export your own STFT process ONNX model, set the following values.
 
-DEFAULT_SEED = 9527                                 # Default seed for random number generation to ensure reproducibility
 N_MELS = 100                                        # Number of Mel bands to generate in the Mel-spectrogram
 NFFT = 1024                                         # Number of FFT components for the STFT process
 HOP_LENGTH = 256                                    # Number of samples between successive frames in the STFT
@@ -20,9 +18,6 @@ ISTFT_TYPE = "istft_A"                              # istft_A: Inputs = [magnitu
 export_path_stft = f"{STFT_TYPE}.onnx"              # The exported stft onnx model save path.
 export_path_istft = f"{ISTFT_TYPE}.onnx"            # The exported istft onnx model save path.
 
-random.seed(DEFAULT_SEED)
-np.random.seed(DEFAULT_SEED)
-torch.manual_seed(DEFAULT_SEED)
 HALF_NFFT = NFFT // 2
 SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1      # The audio length after STFT processed.
 
