@@ -31,18 +31,9 @@ ref_text             = "对，这就是我，万人敬仰的太乙真人。"    
 gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                               # The target TTS.
 
 
-# Replace the original source code.
-# Note! please re-install the vocos after the export process.
-# Note! please re-download the F5 project after the export process.
-shutil.copyfile(modified_path + 'vocos/heads.py', python_package_path + '/vocos/heads.py')
-shutil.copyfile(modified_path + 'vocos/models.py', python_package_path + '/vocos/models.py')
-shutil.copyfile(modified_path + 'vocos/modules.py', python_package_path + '/vocos/modules.py')
-shutil.copyfile(modified_path + 'vocos/pretrained.py', python_package_path + '/vocos/pretrained.py')
-shutil.copyfile(modified_path + 'F5/modules.py', F5_project_path + '/model/modules.py')
-shutil.copyfile(modified_path + 'F5/dit.py', F5_project_path + '/model/backbones/dit.py')
-
 if F5_project_path not in sys.path:
     sys.path.append(F5_project_path)
+
 
 DYNAMIC_AXES = True                     # Default dynamic_axes is input audio length
 N_MELS = 100                            # Number of Mel bands to generate in the Mel-spectrogram
@@ -64,6 +55,17 @@ TEXT_EMBED_LENGTH = 512 + N_MELS        # Set for static axes export.
 WINDOW_TYPE = 'kaiser'                  # Type of window function used in the STFT
 REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1  # Reference audio length after STFT processed
 MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export
+
+
+# Replace the original source code.
+# Note! please re-install the vocos after the export process.
+# Note! please re-download the F5 project after the export process.
+shutil.copyfile(modified_path + 'vocos/heads.py', python_package_path + '/vocos/heads.py')
+shutil.copyfile(modified_path + 'vocos/models.py', python_package_path + '/vocos/models.py')
+shutil.copyfile(modified_path + 'vocos/modules.py', python_package_path + '/vocos/modules.py')
+shutil.copyfile(modified_path + 'vocos/pretrained.py', python_package_path + '/vocos/pretrained.py')
+shutil.copyfile(modified_path + 'F5/modules.py', F5_project_path + '/model/modules.py')
+shutil.copyfile(modified_path + 'F5/dit.py', F5_project_path + '/model/backbones/dit.py')
 
 
 with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
