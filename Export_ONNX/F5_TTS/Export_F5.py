@@ -267,8 +267,7 @@ with torch.inference_mode():
     del text_ids
     del max_duration
     gc.collect()
-
-print("\nExport Done.")
+    print("\nExport Done.")
 
 
 print("\n\nStart to Export the F5-TTS Transformer Part.")
@@ -448,6 +447,6 @@ torchaudio.save(generated_audio, audio_tensor, SAMPLE_RATE)
 if F5_project_path in sys.path:
     sys.path.remove(F5_project_path)
 
-print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
+print(f"\nAudio generation is complete.\n\nTime Cost in Seconds:\n{end_count - start_count:.3f}")
 
 
