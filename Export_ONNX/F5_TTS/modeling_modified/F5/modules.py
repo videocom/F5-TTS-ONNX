@@ -316,10 +316,8 @@ def rotate_half(x):
 
 
 def apply_rotary(t, rope_cos, rope_sin, head_dim):
-    t, t_unrotated = t[..., :head_dim], t[..., head_dim:]
-    t = t * rope_cos + rotate_half(t) * rope_sin
-    out = torch.cat((t, t_unrotated), dim = -1)
-    return out
+    t, t_unrotated = torch.split(t, [head_dim, t.shape[-1] - head_dim], dim=-1)
+    return torch.cat((t * rope_cos + rotate_half(t) * rope_sin, t_unrotated), dim=-1)
 
 
 # Attention processor
