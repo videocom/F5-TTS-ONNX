@@ -342,10 +342,10 @@ class AttnProcessor:
         query = apply_rotary(query, rope_cos, rope_sin, self.head_dim)
         key = apply_rotary(key, rope_cos, rope_sin, self.head_dim)
         query = query.view(2, -1, attn.heads, self.head_dim).transpose(1, 2)
-        key = key.view(2, -1, attn.heads, self.head_dim).transpose(1, 2)
+        key = key.view(2, -1, attn.heads, self.head_dim).permute(0, 2, 3, 1)
         value = value.view(2, -1, attn.heads, self.head_dim).transpose(1, 2)
-        x = F.scaled_dot_product_attention(query, key, value, attn_mask=None, dropout_p=0.0, is_causal=False)
-        return attn.to_out[0](x.transpose(1, 2).reshape(2, -1, self.hidden_size))
+        x = torch.matmul(torch.softmax(torch.matmul(query, key), dim=-1), value).transpose(1, 2).reshape(2, -1, self.hidden_size)
+        return attn.to_out[0](x)
     
 
 # Joint Attention processor for MM-DiT
