@@ -109,12 +109,13 @@ class DiT(nn.Module):
             cond: float['b n d'],  # masked cond audio
             cond_drop,
             time: float['b'] | float[''],  # time step
-            rope_cos,  # cfg for cond audio
-            rope_sin,  # cfg for text
-            mask: bool['b n'] | None = None,
+            rope_cos,
+            rope_sin,
+            qk_rotated_empty,
+            mask: bool['b n'] | None = None
     ):
         t = self.time_embed(time)
         x = torch.cat((self.input_embed(x, cond), self.input_embed(x, cond_drop)), dim=0)
         for block in self.transformer_blocks:
-            x = block(x, t, mask=mask, rope_cos=rope_cos, rope_sin=rope_sin)
+            x = block(x, t, mask=mask, rope_cos=rope_cos, rope_sin=rope_sin, qk_rotated_empty=qk_rotated_empty)
         return self.proj_out(self.norm_out(x, t))
