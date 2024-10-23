@@ -178,6 +178,20 @@ def load_model(ckpt_path):
     return load_checkpoint(model, ckpt_path, 'cpu', use_ema=True)
 
 
+def is_chinese_char(c):
+    cp = ord(c)
+    return (
+        0x4E00 <= cp <= 0x9FFF or  # CJK Unified Ideographs
+        0x3400 <= cp <= 0x4DBF or  # CJK Unified Ideographs Extension A
+        0x20000 <= cp <= 0x2A6DF or  # CJK Unified Ideographs Extension B
+        0x2A700 <= cp <= 0x2B73F or  # CJK Unified Ideographs Extension C
+        0x2B740 <= cp <= 0x2B81F or  # CJK Unified Ideographs Extension D
+        0x2B820 <= cp <= 0x2CEAF or  # CJK Unified Ideographs Extension E
+        0xF900 <= cp <= 0xFAFF or    # CJK Compatibility Ideographs
+        0x2F800 <= cp <= 0x2FA1F     # CJK Compatibility Ideographs Supplement
+    )
+
+
 def convert_char_to_pinyin(text_list, polyphone=True):
     final_text_list = []
     merged_trans = str.maketrans({
@@ -186,31 +200,30 @@ def convert_char_to_pinyin(text_list, polyphone=True):
     })
     chinese_punctuations = set("。，、；：？！《》【】—…")
     for text in text_list:
-        token_list = []
+        char_list = []
         text = text.translate(merged_trans)
         for seg in jieba.cut(text):
-            if seg.isascii():  # Pure ASCII characters
-                if token_list and len(seg) > 1 and token_list[-1] not in " :'\"":
-                    token_list.append(" ")
-                token_list.append(seg)
-            elif polyphone and all('\u4e00' <= c <= '\u9fff' for c in seg):  # Pure Chinese characters
+            if seg.isascii():
+                if char_list and len(seg) > 1 and char_list[-1] not in " :'\"":
+                    char_list.append(" ")
+                char_list.extend(seg)
+            elif polyphone and all(is_chinese_char(c) for c in seg):
                 pinyin_list = lazy_pinyin(seg, style=Style.TONE3, tone_sandhi=True)
-                for pinyin in pinyin_list:
-                    if pinyin not in chinese_punctuations:
-                        token_list.append(" ")
-                    token_list.append(pinyin)
-            else:  # Mixed characters
+                for c in pinyin_list:
+                    if c not in chinese_punctuations:
+                        char_list.append(" ")
+                    char_list.append(c)
+            else:
                 for c in seg:
                     if c.isascii():
-                        token_list.append(c)
+                        char_list.append(c)
+                    elif c in chinese_punctuations:
+                        char_list.append(c)
                     else:
-                        if c not in chinese_punctuations:
-                            token_list.append(" ")
-                            pinyin = lazy_pinyin(c, style=Style.TONE3, tone_sandhi=True)
-                            token_list.append(pinyin[0])
-                        else:
-                            token_list.append(c)
-        final_text_list.append(token_list)
+                        char_list.append(" ")
+                        pinyin = lazy_pinyin(c, style=Style.TONE3, tone_sandhi=True)
+                        char_list.extend(pinyin)
+        final_text_list.append(char_list)
     return final_text_list
 
 
