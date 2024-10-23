@@ -300,24 +300,24 @@ class Attention(nn.Module):
             rope=None,
             rope_cos=None,  # rotary position embedding for x
             rope_sin=None,
+            qk_rotated_empty=None,
             c_rope=None,  # rotary position embedding for c
     ) -> torch.Tensor:
         if c is not None:
             return self.processor(self, x, c=c, mask=mask, rope=rope, c_rope=c_rope)
         else:
-            return self.processor(self, x, mask=mask, rope_cos=rope_cos, rope_sin=rope_sin)
+            return self.processor(self, x, mask=mask, rope_cos=rope_cos, rope_sin=rope_sin, qk_rotated_empty=qk_rotated_empty)
 
 
-def rotate_half(x):
-    x_rotated = torch.empty_like(x)
-    x_rotated[..., ::2] = -x[..., 1::2]
-    x_rotated[..., 1::2] = x[..., ::2]
-    return x_rotated
+def rotate_half(x, x_rotated_empty):
+    x_rotated_empty[..., ::2] = -x[..., 1::2]
+    x_rotated_empty[..., 1::2] = x[..., ::2]
+    return x_rotated_empty
 
 
-def apply_rotary(t, rope_cos, rope_sin, head_dim):
-    t, t_unrotated = torch.split(t, [head_dim, t.shape[-1] - head_dim], dim=-1)
-    return torch.cat((t * rope_cos + rotate_half(t) * rope_sin, t_unrotated), dim=-1)
+def apply_rotary(x, rope_cos, rope_sin, head_dim, x_rotated_empty):
+    x, x_unrotated = torch.split(x, [head_dim, x.shape[-1] - head_dim], dim=-1)
+    return torch.cat((x * rope_cos + rotate_half(x, x_rotated_empty) * rope_sin, x_unrotated), dim=-1)
 
 
 # Attention processor
@@ -334,19 +334,20 @@ class AttnProcessor:
         x: float['b n d'],  # noised input x
         mask: bool['b n'] | None = None,
         rope_cos=None,  # rotary position embedding
-        rope_sin=None
+        rope_sin=None,
+        qk_rotated_empty=None
     ) -> torch.FloatTensor:
         query = attn.to_q(x)
         key = attn.to_k(x)
         value = attn.to_v(x)
-        query = apply_rotary(query, rope_cos, rope_sin, self.head_dim)
-        key = apply_rotary(key, rope_cos, rope_sin, self.head_dim)
+        query = apply_rotary(query, rope_cos, rope_sin, self.head_dim, qk_rotated_empty)
+        key = apply_rotary(key, rope_cos, rope_sin, self.head_dim, qk_rotated_empty)
         query = query.view(2, -1, attn.heads, self.head_dim).transpose(1, 2)
         key = key.view(2, -1, attn.heads, self.head_dim).permute(0, 2, 3, 1)
         value = value.view(2, -1, attn.heads, self.head_dim).transpose(1, 2)
         x = torch.matmul(torch.softmax(torch.matmul(query, key), dim=-1), value).transpose(1, 2).reshape(2, -1, self.hidden_size)
         return attn.to_out[0](x)
-    
+
 
 # Joint Attention processor for MM-DiT
 # modified from diffusers/src/diffusers/models/attention_processor.py
@@ -453,12 +454,12 @@ class DiTBlock(nn.Module):
         self.ff_norm = nn.LayerNorm(dim, elementwise_affine=False, eps=1e-6)
         self.ff = FeedForward(dim = dim, mult = ff_mult, dropout = dropout, approximate = "tanh")
 
-    def forward(self, x, t, mask = None, rope_cos = None, rope_sin = None): # x: noised input, t: time embedding
+    def forward(self, x, t, mask = None, rope_cos = None, rope_sin = None, qk_rotated_empty = None): # x: noised input, t: time embedding
         # pre-norm & modulation for attention input
         norm, gate_msa, shift_mlp, scale_mlp, gate_mlp = self.attn_norm(x, emb=t)
 
         # attention
-        attn_output = self.attn(x=norm, mask=mask, rope_cos=rope_cos, rope_sin=rope_sin)
+        attn_output = self.attn(x=norm, mask=mask, rope_cos=rope_cos, rope_sin=rope_sin, qk_rotated_empty=qk_rotated_empty)
 
         # process attention output for input x
         x = x + gate_msa.unsqueeze(1) * attn_output
