@@ -305,6 +305,8 @@ with torch.inference_mode():
     del rope_sin
     del cat_mel_text
     del cat_mel_text_drop
+    del qk_rotated_empty
+    del time_step
     gc.collect()
     print("\nExport Done.")
 
@@ -348,6 +350,8 @@ with torch.inference_mode():
     del f5_decode
     del denoised
     del ref_signal_len
+    del vocos
+    del custom_istft
     gc.collect()
     print("\nExport Done.")
 
