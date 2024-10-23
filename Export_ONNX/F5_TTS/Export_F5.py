@@ -119,7 +119,7 @@ class F5Transformer(torch.nn.Module):
         self.time_expand = torch.zeros((1, self.steps, self.freq_embed_dim), dtype=torch.float32)
         half_dim = self.freq_embed_dim // 2
         emb_factor = math.log(10000) / (half_dim - 1)
-        emb_factor = 1000 * torch.exp(torch.arange(half_dim, dtype=torch.float32) * -emb_factor)
+        emb_factor = 1000.0 * torch.exp(torch.arange(half_dim, dtype=torch.float32) * -emb_factor)
         for i in range(self.steps):
             emb = time_step[i] * emb_factor
             self.time_expand[:, i, :] = torch.cat((emb.sin(), emb.cos()), dim=-1)
