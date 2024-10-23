@@ -34,7 +34,6 @@ gen_text             = "对，这就是我，万人敬仰的大可奇奇。"    
 if F5_project_path not in sys.path:
     sys.path.append(F5_project_path)
 
-
 DYNAMIC_AXES = True                     # Default dynamic_axes is input audio length
 N_MELS = 100                            # Number of Mel bands to generate in the Mel-spectrogram
 NFFT = 1024                             # Number of FFT components for the STFT process
@@ -45,6 +44,7 @@ RANDOM_SEED = 9527                      # Set seed to reproduce the generated au
 NFE_STEP = 32                           # F5-TTS model setting
 CFG_STRENGTH = 2.0                      # F5-TTS model setting
 SWAY_COEFFICIENT = -1.0                 # F5-TTS model setting
+HIDDEN_SIZE = 1024                      # F5-TTS model setting
 SPEED = 1.0                             # Set for talking speed. Only works with dynamic_axes=True
 TARGET_RMS = 0.15                       # The root mean square value for the audio
 HEAD_DIM = 64                           # F5-TTS Transformers model head_dim
@@ -57,17 +57,6 @@ REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1  # Reference audio leng
 MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export
 
 
-# Replace the original source code.
-# Note! please re-install the vocos after the export process.
-# Note! please re-download the F5 project after the export process.
-shutil.copyfile(modified_path + 'vocos/heads.py', python_package_path + '/vocos/heads.py')
-shutil.copyfile(modified_path + 'vocos/models.py', python_package_path + '/vocos/models.py')
-shutil.copyfile(modified_path + 'vocos/modules.py', python_package_path + '/vocos/modules.py')
-shutil.copyfile(modified_path + 'vocos/pretrained.py', python_package_path + '/vocos/pretrained.py')
-shutil.copyfile(modified_path + 'F5/modules.py', F5_project_path + '/model/modules.py')
-shutil.copyfile(modified_path + 'F5/dit.py', F5_project_path + '/model/backbones/dit.py')
-
-
 with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
     vocab_char_map = {}
     for i, char in enumerate(f):
@@ -76,7 +65,7 @@ vocab_size = len(vocab_char_map)
 
 
 class F5Preprocess(torch.nn.Module):
-    def __init__(self, f5_model, custom_stft, nfft=NFFT, n_mels=N_MELS, sample_rate=SAMPLE_RATE, head_dim=HEAD_DIM, target_rms=TARGET_RMS):
+    def __init__(self, f5_model, custom_stft, nfft=NFFT, n_mels=N_MELS, sample_rate=SAMPLE_RATE, head_dim=HEAD_DIM, target_rms=TARGET_RMS, hidden_size=HIDDEN_SIZE):
         super(F5Preprocess, self).__init__()
         self.f5_text_embed = f5_model.transformer.text_embed  # Instance of CFM model
         self.custom_stft = custom_stft
@@ -87,6 +76,7 @@ class F5Preprocess(torch.nn.Module):
         self.base_rescale_factor = 1.0
         self.interpolation_factor = 1.0
         self.target_rms = target_rms
+        self.hidden_size = hidden_size
         base = 10000.0 * self.base_rescale_factor ** (self.head_dim / (self.head_dim - 2))
         inv_freq = 1.0 / (base ** (torch.arange(0, self.head_dim, 2).float() / self.head_dim))
         freqs = torch.outer(torch.arange(MAX_SIGNAL_LENGTH, dtype=torch.float32), inv_freq) / self.interpolation_factor
@@ -111,7 +101,8 @@ class F5Preprocess(torch.nn.Module):
         rope_sin = self.rope_sin[:, :max_duration, :].float()
         cat_mel_text = torch.cat((mel_signal, self.f5_text_embed(torch.cat((text_ids + 1, torch.zeros((1, max_duration - text_ids.shape[-1]), dtype=torch.int32)), dim=-1), max_duration)), dim=-1)
         cat_mel_text_drop = torch.cat((torch.zeros((1, max_duration, self.num_channels), dtype=torch.float32), self.f5_text_embed(torch.zeros((1, max_duration), dtype=torch.int32), max_duration)), dim=-1)
-        return noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, ref_signal_len
+        qk_rotated_empty = torch.zeros((2, max_duration, self.head_dim), dtype=torch.float32)
+        return noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, qk_rotated_empty, ref_signal_len
 
 
 class F5Transformer(torch.nn.Module):
@@ -126,11 +117,9 @@ class F5Transformer(torch.nn.Module):
         time_step = t + self.sway_sampling_coef * (torch.cos(torch.pi * 0.5 * t) - 1 + t)
         self.delta_t = torch.diff(time_step)
         self.time_expand = torch.zeros((1, self.steps, self.freq_embed_dim), dtype=torch.float32)
-
         half_dim = self.freq_embed_dim // 2
         emb_factor = math.log(10000) / (half_dim - 1)
-        emb_factor = 1000.0 * torch.exp(torch.arange(half_dim, dtype=torch.float32) * -emb_factor)
-
+        emb_factor = 1000 * torch.exp(torch.arange(half_dim, dtype=torch.float32) * -emb_factor)
         for i in range(self.steps):
             emb = time_step[i] * emb_factor
             self.time_expand[:, i, :] = torch.cat((emb.sin(), emb.cos()), dim=-1)
@@ -141,9 +130,10 @@ class F5Transformer(torch.nn.Module):
                 rope_sin: torch.FloatTensor,
                 cat_mel_text: torch.FloatTensor,
                 cat_mel_text_drop: torch.FloatTensor,
-                time_step: torch.IntTensor,
+                qk_rotated_empty: torch.FloatTensor,
+                time_step: torch.IntTensor
                 ):
-        pred = self.f5_transformer(x=noise, cond=cat_mel_text, cond_drop=cat_mel_text_drop, time=self.time_expand[:, time_step], mask=None, rope_cos=rope_cos, rope_sin=rope_sin)
+        pred = self.f5_transformer(x=noise, cond=cat_mel_text, cond_drop=cat_mel_text_drop, time=self.time_expand[:, time_step], mask=None, rope_cos=rope_cos, rope_sin=rope_sin, qk_rotated_empty=qk_rotated_empty)
         pred, pred1 = pred.chunk(2, dim=0)
         return noise + (pred + (pred - pred1) * self.cfg_strength) * self.delta_t[time_step]
 
@@ -251,7 +241,7 @@ with torch.inference_mode():
         (audio, text_ids, max_duration),
         onnx_model_A,
         input_names=['audio', 'text_ids', 'max_duration'],
-        output_names=['noise', 'rope_cos', 'rope_sin', 'cat_mel_text', 'cat_mel_text_drop', 'ref_signal_len'],
+        output_names=['noise', 'rope_cos', 'rope_sin', 'cat_mel_text', 'cat_mel_text_drop', 'qk_rotated_empty', 'ref_signal_len'],
         dynamic_axes={
             'audio': {2: 'audio_len'},
             'text_ids': {1: 'text_ids_len'},
@@ -259,7 +249,8 @@ with torch.inference_mode():
             'rope_cos': {1: 'max_duration'},
             'rope_sin': {1: 'max_duration'},
             'cat_mel_text': {1: 'max_duration', 2: 'text_embed_len'},
-            'cat_mel_text_drop': {1: 'max_duration',  2: 'text_embed_len'}
+            'cat_mel_text_drop': {1: 'max_duration',  2: 'text_embed_len'},
+            'qk_rotated_empty': {1: 'max_duration'}
         } if DYNAMIC_AXES else None,
         do_constant_folding=True,
         opset_version=17)
@@ -269,7 +260,8 @@ with torch.inference_mode():
     del text_ids
     del max_duration
     gc.collect()
-    print("\nExport Done.")
+
+print("\nExport Done.")
 
 
 print("\n\nStart to Export the F5-TTS Transformer Part.")
@@ -279,6 +271,7 @@ rope_cos = torch.ones((1, MAX_DURATION, HEAD_DIM), dtype=torch.float32)
 rope_sin = torch.ones((1, MAX_DURATION, HEAD_DIM), dtype=torch.float32)
 cat_mel_text = torch.ones((1, MAX_DURATION, TEXT_EMBED_LENGTH), dtype=torch.float32)
 cat_mel_text_drop = torch.ones((1, MAX_DURATION, TEXT_EMBED_LENGTH), dtype=torch.float32)
+qk_rotated_empty = torch.ones((2, MAX_DURATION, HEAD_DIM), dtype=torch.float32)
 time_step = torch.tensor(0, dtype=torch.int32)
 
 with torch.inference_mode():
@@ -291,9 +284,9 @@ with torch.inference_mode():
     f5_transformer = F5Transformer(f5_model)
     torch.onnx.export(
         f5_transformer,
-        (noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, time_step),
+        (noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, qk_rotated_empty, time_step),
         onnx_model_B,
-        input_names=['noise', 'rope_cos', 'rope_sin', 'cat_mel_text', 'cat_mel_text_drop', 'time_step'],
+        input_names=['noise', 'rope_cos', 'rope_sin', 'cat_mel_text', 'cat_mel_text_drop', 'qk_rotated_empty', 'time_step'],
         output_names=['denoised'],
         dynamic_axes={
             'noise': {1: 'max_duration'},
@@ -301,6 +294,7 @@ with torch.inference_mode():
             'rope_sin': {1: 'max_duration'},
             'cat_mel_text': {1: 'max_duration', 2: 'text_embed_len'},
             'cat_mel_text_drop': {1: 'max_duration',  2: 'text_embed_len'},
+            'qk_rotated_empty': {1: 'max_duration'},
             'denoised': {1: 'max_duration'}
         } if DYNAMIC_AXES else None,
         do_constant_folding=True,
@@ -381,6 +375,7 @@ out_name_A2 = out_name_A[2].name
 out_name_A3 = out_name_A[3].name
 out_name_A4 = out_name_A[4].name
 out_name_A5 = out_name_A[5].name
+out_name_A6 = out_name_A[6].name
 
 
 ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['CPUExecutionProvider'])
@@ -392,6 +387,7 @@ in_name_B2 = in_name_B[2].name
 in_name_B3 = in_name_B[3].name
 in_name_B4 = in_name_B[4].name
 in_name_B5 = in_name_B[5].name
+in_name_B6 = in_name_B[6].name
 out_name_B0 = out_name_B[0].name
 
 
@@ -420,8 +416,8 @@ time_step = np.array(0, dtype=np.int32)
 
 print("\n\nRun F5-TTS by ONNX Runtime.")
 start_count = time.time()
-noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, ref_signal_len = ort_session_A.run(
-        [out_name_A0, out_name_A1, out_name_A2, out_name_A3, out_name_A4, out_name_A5],
+noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, qk_rotated_empty, ref_signal_len = ort_session_A.run(
+        [out_name_A0, out_name_A1, out_name_A2, out_name_A3, out_name_A4, out_name_A5, out_name_A6],
         {
             in_name_A0: audio,
             in_name_A1: text_ids,
@@ -437,7 +433,8 @@ while time_step < NFE_STEP:
             in_name_B2: rope_sin,
             in_name_B3: cat_mel_text,
             in_name_B4: cat_mel_text_drop,
-            in_name_B5: time_step
+            in_name_B5: qk_rotated_empty,
+            in_name_B6: time_step
         })[0]
     time_step += 1
 generated_signal = ort_session_C.run(
@@ -455,6 +452,5 @@ torchaudio.save(generated_audio, audio_tensor, SAMPLE_RATE)
 if F5_project_path in sys.path:
     sys.path.remove(F5_project_path)
 
-print(f"\nAudio generation is complete.\n\nTime Cost in Seconds:\n{end_count - start_count:.3f}")
-
+print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
 
