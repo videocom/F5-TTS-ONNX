@@ -282,6 +282,12 @@ cat_mel_text_drop = torch.ones((1, MAX_DURATION, TEXT_EMBED_LENGTH), dtype=torch
 time_step = torch.tensor(0, dtype=torch.int32)
 
 with torch.inference_mode():
+    scale_factor = math.pow(HEAD_DIM, -0.25)
+    for i in range(len(f5_model.transformer.transformer_blocks)):
+        f5_model.transformer.transformer_blocks._modules[f'{i}'].attn.to_q.weight.data *= scale_factor
+        f5_model.transformer.transformer_blocks._modules[f'{i}'].attn.to_q.bias.data *= scale_factor
+        f5_model.transformer.transformer_blocks._modules[f'{i}'].attn.to_k.weight.data *= scale_factor
+        f5_model.transformer.transformer_blocks._modules[f'{i}'].attn.to_k.bias.data *= scale_factor
     f5_transformer = F5Transformer(f5_model)
     torch.onnx.export(
         f5_transformer,
