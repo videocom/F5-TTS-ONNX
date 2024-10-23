@@ -73,7 +73,7 @@ else:
 # transformers.optimizer
 model = optimize_model(quanted_model_path,
                        use_gpu=use_gpu,
-                       opt_level=1,  # If use NPU-HTP, opt_level <=1
+                       opt_level=99,  # If use NPU-HTP, opt_level <=1
                        num_heads=num_heads,
                        hidden_size=hidden_size,
                        provider=provider,
