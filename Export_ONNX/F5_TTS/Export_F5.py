@@ -67,7 +67,7 @@ vocab_size = len(vocab_char_map)
 class F5Preprocess(torch.nn.Module):
     def __init__(self, f5_model, custom_stft, nfft=NFFT, n_mels=N_MELS, sample_rate=SAMPLE_RATE, head_dim=HEAD_DIM, target_rms=TARGET_RMS, hidden_size=HIDDEN_SIZE):
         super(F5Preprocess, self).__init__()
-        self.f5_text_embed = f5_model.transformer.text_embed  # Instance of CFM model
+        self.f5_text_embed = f5_model.transformer.text_embed
         self.custom_stft = custom_stft
         self.num_channels = n_mels
         self.nfft = nfft
@@ -86,7 +86,7 @@ class F5Preprocess(torch.nn.Module):
         self.fbank = (torchaudio.functional.melscale_fbanks(self.nfft // 2 + 1, 0, 12000, self.num_channels, self.target_sample_rate, None, 'htk')).transpose(0, 1).unsqueeze(0)
 
     def forward(self,
-                audio: torch.FloatTensor,  # mel or raw wave
+                audio: torch.FloatTensor,
                 text_ids: torch.IntTensor,
                 max_duration: torch.IntTensor
                 ):
@@ -108,7 +108,7 @@ class F5Preprocess(torch.nn.Module):
 class F5Transformer(torch.nn.Module):
     def __init__(self, f5_model, cfg=CFG_STRENGTH, steps=NFE_STEP, sway_coef=SWAY_COEFFICIENT):
         super(F5Transformer, self).__init__()
-        self.f5_transformer = f5_model.transformer  # Instance of CFM model
+        self.f5_transformer = f5_model.transformer
         self.freq_embed_dim = 256
         self.cfg_strength = cfg
         self.steps = steps
@@ -133,7 +133,7 @@ class F5Transformer(torch.nn.Module):
                 qk_rotated_empty: torch.FloatTensor,
                 time_step: torch.IntTensor
                 ):
-        pred = self.f5_transformer(x=noise, cond=cat_mel_text, cond_drop=cat_mel_text_drop, time=self.time_expand[:, time_step], mask=None, rope_cos=rope_cos, rope_sin=rope_sin, qk_rotated_empty=qk_rotated_empty)
+        pred = self.f5_transformer(x=noise, cond=cat_mel_text, cond_drop=cat_mel_text_drop, time=self.time_expand[:, time_step], rope_cos=rope_cos, rope_sin=rope_sin, qk_rotated_empty=qk_rotated_empty)
         pred, pred1 = pred.chunk(2, dim=0)
         return noise + (pred + (pred - pred1) * self.cfg_strength) * self.delta_t[time_step]
 
@@ -142,12 +142,12 @@ class F5Transformer(torch.nn.Module):
 class F5Decode(torch.nn.Module):
     def __init__(self, vocos, custom_istft, target_rms=TARGET_RMS):
         super(F5Decode, self).__init__()
-        self.vocos = vocos  # Instance of CFM model
+        self.vocos = vocos
         self.custom_istft = custom_istft
         self.target_rms = target_rms
 
     def forward(self,
-                denoised: torch.FloatTensor,  # mel or raw wave
+                denoised: torch.FloatTensor,
                 ref_signal_len: torch.LongTensor
                 ):
         denoised = denoised[:, ref_signal_len:, :].transpose(1, 2)
