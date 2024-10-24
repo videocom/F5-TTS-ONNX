@@ -5,13 +5,13 @@ from librosa import util as librosa_util
 
 # To export your own STFT process ONNX model, set the following values.
 
+DYNAMIC_AXES = True                                 # Default dynamic axes is input audio (signal) length.
 N_MELS = 100                                        # Number of Mel bands to generate in the Mel-spectrogram
 NFFT = 1024                                         # Number of FFT components for the STFT process
 HOP_LENGTH = 256                                    # Number of samples between successive frames in the STFT
-AUDIO_LENGTH = 16000                                # Length of the audio input signal in samples.
+AUDIO_LENGTH = 16000                                # Set for static axes. Length of the audio input signal in samples.
 MAX_SIGNAL_LENGTH = 2048                            # Maximum number of frames for the audio length after STFT processed.
 WINDOW_TYPE = 'kaiser'                              # Type of window function used in the STFT
-DYNAMIC_AXES = True                                 # Default dynamic axes is signal / audio length
 PAD_MODE = 'reflect'                                # Select reflect or constant
 STFT_TYPE = "stft_A"                                # stft_A: output real_part only;  stft_B: outputs real_part & imag_part
 ISTFT_TYPE = "istft_A"                              # istft_A: Inputs = [magnitude, phase];  istft_B: Inputs = [magnitude, real_part, imag_part], The dtype of imag_part is float format.
