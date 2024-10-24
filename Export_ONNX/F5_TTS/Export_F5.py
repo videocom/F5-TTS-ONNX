@@ -34,7 +34,10 @@ gen_text             = "对，这就是我，万人敬仰的大可奇奇。"    
 if F5_project_path not in sys.path:
     sys.path.append(F5_project_path)
 
-DYNAMIC_AXES = True                     # Default dynamic_axes is input audio length
+
+ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
+                                        # else keep empty.
+DYNAMIC_AXES = True                     # Default dynamic_axes is input audio length. Note, some providers only work for static axes.
 N_MELS = 100                            # Number of Mel bands to generate in the Mel-spectrogram
 NFFT = 1024                             # Number of FFT components for the STFT process
 HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
@@ -54,7 +57,9 @@ MAX_GENERATED_LENGTH = 600              # Set for static axes export. Max signal
 TEXT_EMBED_LENGTH = 512 + N_MELS        # Set for static axes export.
 WINDOW_TYPE = 'kaiser'                  # Type of window function used in the STFT
 REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1  # Reference audio length after STFT processed
-MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export
+MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export. MAX_DURATION <= MAX_SIGNAL_LENGTH
+if MAX_DURATION > MAX_SIGNAL_LENGTH:
+    MAX_DURATION = MAX_SIGNAL_LENGTH
 
 
 with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
@@ -395,7 +400,7 @@ out_name_A5 = out_name_A[5].name
 out_name_A6 = out_name_A[6].name
 
 
-ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['CPUExecutionProvider'])
+ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers.append('CPUExecutionProvider'))
 in_name_B = ort_session_B.get_inputs()
 out_name_B = ort_session_B.get_outputs()
 in_name_B0 = in_name_B[0].name
