@@ -22,7 +22,7 @@ provider = 'CPUExecutionProvider'                                               
 
 # Convert the fp32 to fp16
 model = onnx.load(model_path)
-# Using convert_float_to_float16 on F5-TTS ONNX models will get errors.
+# Using float16.convert_float_to_float16 on F5-TTS ONNX models will get errors.
 # model = float16.convert_float_to_float16(model,
 #                                          min_positive_val=0,
 #                                          max_finite_val=65504,
