@@ -69,6 +69,17 @@ with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding
 vocab_size = len(vocab_char_map)
 
 
+# Replace the original source code.
+# Note! please re-install the vocos after the export process.
+# Note! please re-download the F5 project after the export process.
+shutil.copyfile(modified_path + 'vocos/heads.py', python_package_path + '/vocos/heads.py')
+shutil.copyfile(modified_path + 'vocos/models.py', python_package_path + '/vocos/models.py')
+shutil.copyfile(modified_path + 'vocos/modules.py', python_package_path + '/vocos/modules.py')
+shutil.copyfile(modified_path + 'vocos/pretrained.py', python_package_path + '/vocos/pretrained.py')
+shutil.copyfile(modified_path + 'F5/modules.py', F5_project_path + '/model/modules.py')
+shutil.copyfile(modified_path + 'F5/dit.py', F5_project_path + '/model/backbones/dit.py')
+
+
 class F5Preprocess(torch.nn.Module):
     def __init__(self, f5_model, custom_stft, nfft=NFFT, n_mels=N_MELS, sample_rate=SAMPLE_RATE, head_dim=HEAD_DIM, target_rms=TARGET_RMS, hidden_size=HIDDEN_SIZE):
         super(F5Preprocess, self).__init__()
