@@ -28,7 +28,7 @@ modified_path        = './modeling_modified/'
 
 
 reference_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The reference audio path.
-generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The generated audio path.
+generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"   # The generated audio path.
 ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                           # The ASR result of reference audio.
 gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                           # The target TTS.
 
