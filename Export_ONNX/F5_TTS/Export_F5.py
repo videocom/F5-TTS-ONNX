@@ -16,9 +16,9 @@ import onnxruntime
 from STFT_Process import STFT_Process  # The custom STFT/ISTFT can be exported in ONNX format.
 
 
-F5_project_path      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts"                    # The F5-TTS Github project download path.
-F5_safetensors_path  = "/Users/dake/Downloads/model_1200000.safetensors"                 # The F5-TTS model download path.
-vocos_model_path     = "/Users/dake/Downloads/vocos"                                     # The Vocos model download path.
+F5_project_path      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts"                    # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+F5_safetensors_path  = "/Users/dake/Downloads/model_1200000.safetensors"                 # The F5-TTS model download path.           URL: https://huggingface.co/SWivid/F5-TTS/tree/main/F5TTS_Base
+vocos_model_path     = "/Users/dake/Downloads/vocos"                                     # The Vocos model download path.            URL: https://huggingface.co/charactr/vocos-mel-24khz/tree/main
 onnx_model_A         = "/Users/dake/Downloads/F5_ONNX/F5_Preprocess.onnx"                # The exported onnx model path.
 onnx_model_B         = "/Users/dake/Downloads/F5_ONNX/F5_Transformer.onnx"               # The exported onnx model path.
 onnx_model_C         = "/Users/dake/Downloads/F5_ONNX/F5_Decode.onnx"                    # The exported onnx model path.
@@ -29,8 +29,8 @@ modified_path        = './modeling_modified/'
 
 reference_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The reference audio path.
 generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"      # The generated audio path.
-ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                         # The ASR result of reference audio.
-gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                         # The target TTS.
+ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                           # The ASR result of reference audio.
+gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                           # The target TTS.
 
 
 if F5_project_path not in sys.path:
@@ -199,8 +199,8 @@ def load_model(ckpt_path):
 def is_chinese_char(c):
     cp = ord(c)
     return (
-        0x4E00 <= cp <= 0x9FFF or  # CJK Unified Ideographs
-        0x3400 <= cp <= 0x4DBF or  # CJK Unified Ideographs Extension A
+        0x4E00 <= cp <= 0x9FFF or    # CJK Unified Ideographs
+        0x3400 <= cp <= 0x4DBF or    # CJK Unified Ideographs Extension A
         0x20000 <= cp <= 0x2A6DF or  # CJK Unified Ideographs Extension B
         0x2A700 <= cp <= 0x2B73F or  # CJK Unified Ideographs Extension C
         0x2B740 <= cp <= 0x2B81F or  # CJK Unified Ideographs Extension D
