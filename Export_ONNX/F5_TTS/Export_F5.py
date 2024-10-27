@@ -16,19 +16,19 @@ import onnxruntime
 from STFT_Process import STFT_Process  # The custom STFT/ISTFT can be exported in ONNX format.
 
 
-F5_project_path      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts"                   # The F5-TTS Github project download path.
-F5_safetensors_path  = "/Users/dake/Downloads/model_1200000.safetensors"                # The F5-TTS model download path.
-vocos_model_path     = "/Users/dake/Downloads/vocos"                                    # The Vocos model download path.
-onnx_model_A         = "/Users/dake/Downloads/F5_ONNX/F5_Preprocess.onnx"               # The exported onnx model path.
-onnx_model_B         = "/Users/dake/Downloads/F5_ONNX/F5_Transformer.onnx"              # The exported onnx model path.
-onnx_model_C         = "/Users/dake/Downloads/F5_ONNX/F5_Decode.onnx"                   # The exported onnx model path.
+F5_project_path      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts"                    # The F5-TTS Github project download path.
+F5_safetensors_path  = "/Users/dake/Downloads/model_1200000.safetensors"                 # The F5-TTS model download path.
+vocos_model_path     = "/Users/dake/Downloads/vocos"                                     # The Vocos model download path.
+onnx_model_A         = "/Users/dake/Downloads/F5_ONNX/F5_Preprocess.onnx"                # The exported onnx model path.
+onnx_model_B         = "/Users/dake/Downloads/F5_ONNX/F5_Transformer.onnx"               # The exported onnx model path.
+onnx_model_C         = "/Users/dake/Downloads/F5_ONNX/F5_Decode.onnx"                    # The exported onnx model path.
 python_package_path  = '/Users/dake/PycharmProjects/.venv/lib/python3.11/site-packages'  # The Python package path.
 modified_path        = './modeling_modified/'
 
 
 
 reference_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The reference audio path.
-generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"   # The generated audio path.
+generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"      # The generated audio path.
 ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                           # The ASR result of reference audio.
 gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                           # The target TTS.
 
