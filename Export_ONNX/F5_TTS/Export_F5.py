@@ -10,9 +10,9 @@ import jieba
 from pypinyin import lazy_pinyin, Style
 import numpy as np
 from vocos import Vocos
-from model import CFM, DiT
-from model.utils import load_checkpoint
 import onnxruntime
+from src.f5_tts.model import CFM, DiT
+from src.f5_tts.infer.utils_infer import load_checkpoint
 from STFT_Process import STFT_Process  # The custom STFT/ISTFT can be exported in ONNX format.
 
 
