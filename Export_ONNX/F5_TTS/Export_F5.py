@@ -11,29 +11,51 @@ from pypinyin import lazy_pinyin, Style
 import numpy as np
 from vocos import Vocos
 import onnxruntime
-from src.f5_tts.model import CFM, DiT
-from src.f5_tts.infer.utils_infer import load_checkpoint
 from STFT_Process import STFT_Process  # The custom STFT/ISTFT can be exported in ONNX format.
 
 
-F5_project_path      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts"                    # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+F5_project_path      = "/Users/dake/Downloads/F5-TTS-main"                               # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
 F5_safetensors_path  = "/Users/dake/Downloads/model_1200000.safetensors"                 # The F5-TTS model download path.           URL: https://huggingface.co/SWivid/F5-TTS/tree/main/F5TTS_Base
 vocos_model_path     = "/Users/dake/Downloads/vocos"                                     # The Vocos model download path.            URL: https://huggingface.co/charactr/vocos-mel-24khz/tree/main
 onnx_model_A         = "/Users/dake/Downloads/F5_ONNX/F5_Preprocess.onnx"                # The exported onnx model path.
 onnx_model_B         = "/Users/dake/Downloads/F5_ONNX/F5_Transformer.onnx"               # The exported onnx model path.
 onnx_model_C         = "/Users/dake/Downloads/F5_ONNX/F5_Decode.onnx"                    # The exported onnx model path.
 python_package_path  = '/Users/dake/PycharmProjects/.venv/lib/python3.11/site-packages'  # The Python package path.
-modified_path        = './modeling_modified/'
-
+modified_path        = './modeling_modified'
 
 reference_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The reference audio path.
 generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"      # The generated audio path.
-ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                           # The ASR result of reference audio.
-gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                           # The target TTS.
+ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                         # The ASR result of reference audio.
+gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                         # The target TTS.
+
+
+with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
+    vocab_char_map = {}
+    for i, char in enumerate(f):
+        vocab_char_map[char[:-1]] = i
+vocab_size = len(vocab_char_map)
+
+
+F5_project_path += "/src"
 
 
 if F5_project_path not in sys.path:
     sys.path.append(F5_project_path)
+
+
+# Replace the original source code.
+# Note! please re-install the vocos after the export process.
+# Note! please re-download the F5 project after the export process.
+shutil.copyfile(modified_path + '/vocos/heads.py', python_package_path + '/vocos/heads.py')
+shutil.copyfile(modified_path + '/vocos/models.py', python_package_path + '/vocos/models.py')
+shutil.copyfile(modified_path + '/vocos/modules.py', python_package_path + '/vocos/modules.py')
+shutil.copyfile(modified_path + '/vocos/pretrained.py', python_package_path + '/vocos/pretrained.py')
+shutil.copyfile(modified_path + '/F5/modules.py', F5_project_path + '/f5_tts/model/modules.py')
+shutil.copyfile(modified_path + '/F5/dit.py', F5_project_path + '/f5_tts/model/backbones/dit.py')
+
+
+from f5_tts.model import CFM, DiT
+from f5_tts.infer.utils_infer import load_checkpoint
 
 
 ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
@@ -61,24 +83,6 @@ REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1  # Reference audio leng
 MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export. MAX_DURATION <= MAX_SIGNAL_LENGTH
 if MAX_DURATION > MAX_SIGNAL_LENGTH:
     MAX_DURATION = MAX_SIGNAL_LENGTH
-
-
-with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
-    vocab_char_map = {}
-    for i, char in enumerate(f):
-        vocab_char_map[char[:-1]] = i
-vocab_size = len(vocab_char_map)
-
-
-# Replace the original source code.
-# Note! please re-install the vocos after the export process.
-# Note! please re-download the F5 project after the export process.
-shutil.copyfile(modified_path + 'vocos/heads.py', python_package_path + '/vocos/heads.py')
-shutil.copyfile(modified_path + 'vocos/models.py', python_package_path + '/vocos/models.py')
-shutil.copyfile(modified_path + 'vocos/modules.py', python_package_path + '/vocos/modules.py')
-shutil.copyfile(modified_path + 'vocos/pretrained.py', python_package_path + '/vocos/pretrained.py')
-shutil.copyfile(modified_path + 'F5/modules.py', F5_project_path + '/model/modules.py')
-shutil.copyfile(modified_path + 'F5/dit.py', F5_project_path + '/model/backbones/dit.py')
 
 
 class F5Preprocess(torch.nn.Module):
@@ -487,4 +491,3 @@ if F5_project_path in sys.path:
     sys.path.remove(F5_project_path)
 
 print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
-
