@@ -26,7 +26,6 @@ python_package_path  = '/Users/dake/PycharmProjects/.venv/lib/python3.11/site-pa
 modified_path        = './modeling_modified/'
 
 
-
 reference_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The reference audio path.
 generated_audio      = "/Users/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"      # The generated audio path.
 ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                           # The ASR result of reference audio.
