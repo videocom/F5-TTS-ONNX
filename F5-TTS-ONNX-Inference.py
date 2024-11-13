@@ -22,7 +22,6 @@ gen_text             = "对，这就是我，万人敬仰的大可奇奇。"    
 ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
                                         # else keep empty.
 HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
-MAX_SIGNAL_LENGTH = 2048                # Max frames for audio length after STFT processed
 SAMPLE_RATE = 24000                     # The generated audio sample rate
 RANDOM_SEED = 9527                      # Set seed to reproduce the generated audio
 NFE_STEP = 32                           # F5-TTS model setting
