@@ -9,14 +9,14 @@ import torchaudio
 from pypinyin import lazy_pinyin, Style
 
 F5_project_path      = "/home/dake/Downloads/F5-TTS-main"                               # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
-onnx_model_A         = "/home/dake/Downloads/F5_Quanted/F5_Preprocess.onnx"                # The exported onnx model path.
-onnx_model_B         = "/home/dake/Downloads/F5_Quanted/F5_Transformer.onnx"               # The exported onnx model path.
-onnx_model_C         = "/home/dake/Downloads/F5_Quanted/F5_Decode.onnx"                    # The exported onnx model path.
+onnx_model_A         = "/home/dake/Downloads/F5_Preprocess.onnx"                        # The exported onnx model path.
+onnx_model_B         = "/home/dake/Downloads/F5_Transformer.onnx"                       # The exported onnx model path.
+onnx_model_C         = "/home/dake/Downloads/F5_Decode.onnx"                            # The exported onnx model path.
 
-reference_audio      = "/home/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"   # The reference audio path.
-generated_audio      = "/home/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"      # The generated audio path.
-ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                         # The ASR result of reference audio.
-gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                         # The target TTS.
+reference_audio      = "/home/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"     # The reference audio path.
+generated_audio      = "/home/dake/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"        # The generated audio path.
+ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                          # The ASR result of reference audio.
+gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                          # The target TTS.
 
 
 ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
