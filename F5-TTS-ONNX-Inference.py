@@ -109,6 +109,7 @@ session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
 
 
 ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, providers=['CPUExecutionProvider'])
+model_type = ort_session_A._inputs_meta[0].type
 in_name_A = ort_session_A.get_inputs()
 out_name_A = ort_session_A.get_outputs()
 in_name_A0 = in_name_A[0].name
@@ -124,7 +125,6 @@ out_name_A6 = out_name_A[6].name
 
 
 ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers.append('CPUExecutionProvider'))
-model_type = ort_session_B._inputs_meta[0].type
 in_name_B = ort_session_B.get_inputs()
 out_name_B = ort_session_B.get_outputs()
 in_name_B0 = in_name_B[0].name
