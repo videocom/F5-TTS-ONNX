@@ -165,7 +165,7 @@ def load_checkpoint(model, ckpt_path, device, dtype=None, use_ema=True):
         #     if key in checkpoint["model_state_dict"]:
         #         del checkpoint["model_state_dict"][key]
 
-        model.load_state_dict(checkpoint["model_state_dict"])
+        model.load_state_dict(checkpoint["model_state_dict"], , strict=False)
     else:
         if ckpt_type == "safetensors":
             checkpoint = {"model_state_dict": checkpoint}
