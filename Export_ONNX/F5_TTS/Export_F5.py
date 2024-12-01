@@ -269,8 +269,7 @@ max_duration = torch.tensor(MAX_DURATION, dtype=torch.long)
 
 with torch.inference_mode():
     f5_model = load_model(F5_safetensors_path)
-    custom_stft = STFT_Process(model_type='stft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=MAX_SIGNAL_LENGTH, window_type=WINDOW_TYPE).eval().stft_A_forward
-    f5_preprocess = F5Preprocess(f5_model, custom_stft)
+    custom_stft = STFT_Process(model_type='stft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=MAX_SIGNAL_LENGTH, window_type=WINDOW_TYPE).eval()
     torch.onnx.export(
         f5_preprocess,
         (audio, text_ids, max_duration),
@@ -352,7 +351,7 @@ denoised = torch.ones((1, MAX_DURATION, N_MELS), dtype=torch.float32)
 ref_signal_len = torch.tensor(REFERENCE_SIGNAL_LENGTH, dtype=torch.long)
 
 with torch.inference_mode():
-    custom_istft = STFT_Process(model_type='istft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=MAX_SIGNAL_LENGTH, window_type=WINDOW_TYPE).eval().istft_A_forward
+    custom_istft = STFT_Process(model_type='istft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=MAX_SIGNAL_LENGTH, window_type=WINDOW_TYPE).eval()
     # Vocos model preprocess
     vocos = Vocos.from_pretrained(vocos_model_path)
     vocos.backbone.norm.weight.data = (vocos.backbone.norm.weight.data * torch.sqrt(torch.tensor(vocos.backbone.norm.weight.data.shape[0], dtype=torch.float32))).view(1, -1, 1)
