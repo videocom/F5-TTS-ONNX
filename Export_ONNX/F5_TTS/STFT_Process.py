@@ -80,9 +80,9 @@ class STFT_Process(torch.nn.Module):
 
     def forward(self, *args):
         if self.model_type == 'stft_A':
-            return self.stft_A_forward(args[0])
+            return self.stft_A_forward(*args)
         if self.model_type == 'stft_B':
-            return self.stft_B_forward(args[0])
+            return self.stft_B_forward(*args)
         elif self.model_type == 'istft_A':
             return self.istft_A_forward(*args)
         elif self.model_type== 'istft_B':
