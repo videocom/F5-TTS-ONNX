@@ -270,6 +270,7 @@ max_duration = torch.tensor(MAX_DURATION, dtype=torch.long)
 with torch.inference_mode():
     f5_model = load_model(F5_safetensors_path)
     custom_stft = STFT_Process(model_type='stft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=MAX_SIGNAL_LENGTH, window_type=WINDOW_TYPE).eval()
+    f5_preprocess = F5Preprocess(f5_model, custom_stft)
     torch.onnx.export(
         f5_preprocess,
         (audio, text_ids, max_duration),
