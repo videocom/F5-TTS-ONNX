@@ -109,7 +109,7 @@ class STFT_Process(torch.nn.Module):
         inverse_transform = torch.nn.functional.conv_transpose1d(
             torch.cat((magnitude * torch.cos(phase), magnitude * torch.sin(phase)), dim=1),
             self.inverse_basis,
-            stride=HOP_LENGTH,
+            stride=self.hop_len,
             padding=0,
         )
         output = inverse_transform[:, :, self.half_n_fft: -self.half_n_fft] * self.window_sum_inv[self.half_n_fft: inverse_transform.size(-1) - self.half_n_fft]
@@ -120,7 +120,7 @@ class STFT_Process(torch.nn.Module):
         inverse_transform = torch.nn.functional.conv_transpose1d(
             torch.cat((magnitude * torch.cos(phase), magnitude * torch.sin(phase)), dim=1),
             self.inverse_basis,
-            stride=HOP_LENGTH,
+            stride=self.hop_len,
             padding=0,
         )
         output = inverse_transform[:, :, self.half_n_fft: -self.half_n_fft] * self.window_sum_inv[self.half_n_fft: inverse_transform.size(-1) - self.half_n_fft]
