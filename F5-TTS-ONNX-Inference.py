@@ -201,5 +201,5 @@ end_count = time.time()
 
 # Save to audio
 generated_signal = generated_signal.astype(np.float32).reshape(-1)
-sf.write(generated_audio, generated_signal, SAMPLE_RATE, format=generated_audio.split(".")[1])
+sf.write(generated_audio, generated_signal, SAMPLE_RATE, format='FLAC')
 print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
