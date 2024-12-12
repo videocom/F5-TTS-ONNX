@@ -3,9 +3,10 @@ import sys
 import time
 import jieba
 import numpy as np
-import onnxruntime
 import torch
-import torchaudio
+import onnxruntime
+import soundfile as sf
+from pydub import AudioSegment
 from pypinyin import lazy_pinyin, Style
 
 F5_project_path      = "/home/dake/Downloads/F5-TTS-main"                               # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
@@ -149,18 +150,19 @@ in_name_C1 = in_name_C[1].name
 out_name_C0 = out_name_C[0].name
 
 
-# Run F5-TTS by ONNX Runtime
-audio, sr = torchaudio.load(reference_audio)
-if sr != SAMPLE_RATE:
-    resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=SAMPLE_RATE)
-    audio = resampler(audio)
-audio = audio.unsqueeze(0).numpy()
+# Load the input audio
+print(f"\nReference Audio: {reference_audio}")
+audio = np.array(AudioSegment.from_file(reference_audio).set_channels(1).set_frame_rate(SAMPLE_RATE).get_array_of_samples())
+audio_len = len(audio)
+audio = audio.astype(np.float32) / 32768.0
 if "float16" in model_type:
-   audio = audio.astype(np.float16)
+    audio = audio.astype(np.float16)
+audio = audio.reshape(1, 1, -1)
+
 zh_pause_punc = r"。，、；：？！"
 ref_text_len = len(ref_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc, ref_text))
 gen_text_len = len(gen_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc, gen_text))
-ref_audio_len = audio.shape[-1] // HOP_LENGTH + 1
+ref_audio_len = audio_len // HOP_LENGTH + 1
 max_duration = np.array(ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / SPEED), dtype=np.int64)
 gen_text = convert_char_to_pinyin([ref_text + gen_text])
 text_ids = list_str_to_idx(gen_text, vocab_char_map).numpy()
@@ -198,7 +200,6 @@ generated_signal = ort_session_C.run(
 end_count = time.time()
 
 # Save to audio
-audio_tensor = torch.tensor(generated_signal, dtype=torch.float32).squeeze(0)
-torchaudio.save(generated_audio, audio_tensor, SAMPLE_RATE)
-
+generated_signal = generated_signal.astype(np.float32).reshape(-1)
+sf.write(generated_audio, generated_signal, SAMPLE_RATE, format=generated_audio.split(".")[1])
 print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
