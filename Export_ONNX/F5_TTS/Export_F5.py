@@ -90,7 +90,7 @@ MAX_GENERATED_LENGTH = 600              # Set for static axes export. Max signal
 TEXT_EMBED_LENGTH = 512 + N_MELS        # Set for static axes export.
 
 # Others
-REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1  # Reference audio length after STFT processed
+REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1       # Reference audio length after STFT processed
 MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export. MAX_DURATION <= MAX_SIGNAL_LENGTH
 if MAX_DURATION > MAX_SIGNAL_LENGTH:
     MAX_DURATION = MAX_SIGNAL_LENGTH
