@@ -62,24 +62,34 @@ from f5_tts.infer.utils_infer import load_checkpoint
 ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
                                         # else keep empty.
 DYNAMIC_AXES = True                     # Default dynamic_axes is input audio length. Note, some providers only work for static axes.
-N_MELS = 100                            # Number of Mel bands to generate in the Mel-spectrogram
-NFFT = 1024                             # Number of FFT components for the STFT process
-HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
-MAX_SIGNAL_LENGTH = 2048                # Max frames for audio length after STFT processed. Set a appropriate larger value for long audio input, such as 4096.
+
+# Model Parameters
 SAMPLE_RATE = 24000                     # The generated audio sample rate
-RANDOM_SEED = 9527                      # Set seed to reproduce the generated audio
-NFE_STEP = 32                           # F5-TTS model setting
+HEAD_DIM = 64                           # F5-TTS Transformers model head_dim
 CFG_STRENGTH = 2.0                      # F5-TTS model setting
 SWAY_COEFFICIENT = -1.0                 # F5-TTS model setting
 HIDDEN_SIZE = 1024                      # F5-TTS model setting
+TARGET_RMS = 0.15                       # The root-mean-square value for the audio
 SPEED = 1.0                             # Set for talking speed. Only works with dynamic_axes=True
-TARGET_RMS = 0.15                       # The root mean square value for the audio
-HEAD_DIM = 64                           # F5-TTS Transformers model head_dim
+RANDOM_SEED = 9527                      # Set seed to reproduce the generated audio
+NFE_STEP = 32                           # F5-TTS model setting
+HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT. Affect the talking speed.
+
+
+# STFT/ISTFT Settings
+N_MELS = 100                            # Number of Mel bands to generate in the Mel-spectrogram
+NFFT = 1024                             # Number of FFT components for the STFT process
+WINDOW_TYPE = 'kaiser'                  # Type of window function used in the STFT
+MAX_SIGNAL_LENGTH = 2560                # Max frames for audio length after STFT processed. Set an appropriate larger value for long audio input, such as 4096.
+
+
+# Setting for Static Axes using
 AUDIO_LENGTH = 160000                   # Set for static axes export. Length of audio input signal in samples
 TEXT_IDS_LENGTH = 60                    # Set for static axes export. Text_ids from [ref_text + gen_text]
 MAX_GENERATED_LENGTH = 600              # Set for static axes export. Max signal features before passing to ISTFT
 TEXT_EMBED_LENGTH = 512 + N_MELS        # Set for static axes export.
-WINDOW_TYPE = 'kaiser'                  # Type of window function used in the STFT
+
+# Others
 REFERENCE_SIGNAL_LENGTH = AUDIO_LENGTH // HOP_LENGTH + 1  # Reference audio length after STFT processed
 MAX_DURATION = REFERENCE_SIGNAL_LENGTH + MAX_GENERATED_LENGTH  # Set for static axes export. MAX_DURATION <= MAX_SIGNAL_LENGTH
 if MAX_DURATION > MAX_SIGNAL_LENGTH:
@@ -106,16 +116,19 @@ class F5Preprocess(torch.nn.Module):
         self.rope_cos = self.freqs.cos().half()
         self.rope_sin = self.freqs.sin().half()
         self.fbank = (torchaudio.functional.melscale_fbanks(self.nfft // 2 + 1, 0, 12000, self.num_channels, self.target_sample_rate, None, 'htk')).transpose(0, 1).unsqueeze(0)
+        self.pre_emphasis = 0.97
 
     def forward(self,
-                audio: torch.FloatTensor,
+                audio: torch.ShortTensor,
                 text_ids: torch.IntTensor,
                 max_duration: torch.IntTensor
                 ):
+        audio = audio.float()
         audio = audio * self.target_rms / torch.sqrt(torch.mean(torch.square(audio)))
-        mel_signal = self.custom_stft(audio).abs()
-        mel_signal = torch.matmul(self.fbank, mel_signal).clamp(min=1e-5).log()
-        mel_signal = mel_signal.transpose(1, 2)
+        audio -= torch.mean(audio)  # Remove DC Offset
+        audio = torch.cat((audio[:, :, :1], audio[:, :, 1:] - self.pre_emphasis * audio[:, :, :-1]), dim=-1)  # Pre Emphasize
+        real_part, imag_part = self.custom_stft(audio)
+        mel_signal = torch.matmul(self.fbank, torch.sqrt(real_part * real_part + imag_part * imag_part)).transpose(1, 2).clamp(min=1e-5).log()
         ref_signal_len = mel_signal.shape[1]
         mel_signal = torch.cat((mel_signal, torch.zeros((1, max_duration - ref_signal_len, self.num_channels), dtype=torch.float32)), dim=1)
         noise = torch.randn((1, max_duration, self.num_channels), dtype=torch.float32)
@@ -176,7 +189,7 @@ class F5Decode(torch.nn.Module):
         denoised = self.vocos.decode(denoised)
         denoised = self.custom_istft(*denoised)
         generated_signal = denoised * self.target_rms / torch.sqrt(torch.mean(torch.square(denoised)))
-        return generated_signal
+        return (32767.0 * generated_signal).clamp(min=-32767.0, max=32767.0).to(torch.int16)
 
 
 def load_model(ckpt_path):
@@ -263,13 +276,13 @@ def list_str_to_idx(
 
 print("\n\nStart to Export the F5-TTS Preprocess Part.")
 # Dummy for Export the F5_Preprocess part
-audio = torch.ones((1, 1, AUDIO_LENGTH), dtype=torch.float32)
+audio = torch.ones((1, 1, AUDIO_LENGTH), dtype=torch.int16)
 text_ids = torch.ones((1, TEXT_IDS_LENGTH), dtype=torch.int32)
 max_duration = torch.tensor(MAX_DURATION, dtype=torch.long)
 
 with torch.inference_mode():
     f5_model = load_model(F5_safetensors_path)
-    custom_stft = STFT_Process(model_type='stft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=MAX_SIGNAL_LENGTH, window_type=WINDOW_TYPE).eval()
+    custom_stft = STFT_Process(model_type='stft_B', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=0, window_type=WINDOW_TYPE).eval()
     f5_preprocess = F5Preprocess(f5_model, custom_stft)
     torch.onnx.export(
         f5_preprocess,
@@ -400,6 +413,9 @@ session_opts.intra_op_num_threads = 0  # Under the node, execute the operators w
 session_opts.enable_cpu_mem_arena = True  # True for execute speed; False for less memory usage.
 session_opts.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+session_opts.add_session_config_entry("session.intra_op.allow_spinning", "1")
+session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
+session_opts.add_session_config_entry("session.set_denormal_as_zero", "1")
 
 
 ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, providers=['CPUExecutionProvider'])
@@ -443,11 +459,10 @@ out_name_C0 = out_name_C[0].name
 
 
 # Run F5-TTS by ONNX Runtime
-audio, sr = torchaudio.load(reference_audio)
-if sr != SAMPLE_RATE:
-    resampler = torchaudio.transforms.Resample(orig_freq=sr, new_freq=SAMPLE_RATE)
-    audio = resampler(audio)
-audio = audio.unsqueeze(0).numpy()
+audio = np.array(AudioSegment.from_file(reference_audio).set_channels(1).set_frame_rate(SAMPLE_RATE).get_array_of_samples())
+audio_len = len(audio)
+audio = audio.reshape(1, 1, -1)
+
 zh_pause_punc = r"。，、；：？！"
 ref_text_len = len(ref_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc, ref_text))
 gen_text_len = len(gen_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc, gen_text))
@@ -489,8 +504,7 @@ generated_signal = ort_session_C.run(
 end_count = time.time()
 
 # Save to audio
-audio_tensor = torch.tensor(generated_signal).squeeze(0)
-torchaudio.save(generated_audio, audio_tensor, SAMPLE_RATE)
+sf.write(generated_audio, generated_signal.reshape(-1), SAMPLE_RATE, format='WAVEX')
 
 if F5_project_path in sys.path:
     sys.path.remove(F5_project_path)
