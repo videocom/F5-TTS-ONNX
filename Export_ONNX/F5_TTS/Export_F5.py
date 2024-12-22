@@ -116,19 +116,16 @@ class F5Preprocess(torch.nn.Module):
         self.rope_cos = self.freqs.cos().half()
         self.rope_sin = self.freqs.sin().half()
         self.fbank = (torchaudio.functional.melscale_fbanks(self.nfft // 2 + 1, 0, 12000, self.num_channels, self.target_sample_rate, None, 'htk')).transpose(0, 1).unsqueeze(0)
-        self.pre_emphasis = 0.97
 
     def forward(self,
-                audio: torch.ShortTensor,
+                audio: torch.FloatTensor,
                 text_ids: torch.IntTensor,
                 max_duration: torch.IntTensor
                 ):
         audio = audio.float()
         audio = audio * self.target_rms / torch.sqrt(torch.mean(torch.square(audio)))
-        audio -= torch.mean(audio)  # Remove DC Offset
-        audio = torch.cat((audio[:, :, :1], audio[:, :, 1:] - self.pre_emphasis * audio[:, :, :-1]), dim=-1)  # Pre Emphasize
-        real_part, imag_part = self.custom_stft(audio)
-        mel_signal = torch.matmul(self.fbank, torch.sqrt(real_part * real_part + imag_part * imag_part)).transpose(1, 2).clamp(min=1e-5).log()
+        mel_signal = self.custom_stft(audio).abs()
+        mel_signal = torch.matmul(self.fbank, mel_signal).transpose(1, 2).clamp(min=1e-5).log()
         ref_signal_len = mel_signal.shape[1]
         mel_signal = torch.cat((mel_signal, torch.zeros((1, max_duration - ref_signal_len, self.num_channels), dtype=torch.float32)), dim=1)
         noise = torch.randn((1, max_duration, self.num_channels), dtype=torch.float32)
@@ -282,7 +279,7 @@ max_duration = torch.tensor(MAX_DURATION, dtype=torch.long)
 
 with torch.inference_mode():
     f5_model = load_model(F5_safetensors_path)
-    custom_stft = STFT_Process(model_type='stft_B', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=0, window_type=WINDOW_TYPE).eval()
+    custom_stft = STFT_Process(model_type='stft_A', n_fft=NFFT, n_mels=N_MELS, hop_len=HOP_LENGTH, max_frames=0, window_type=WINDOW_TYPE).eval()
     f5_preprocess = F5Preprocess(f5_model, custom_stft)
     torch.onnx.export(
         f5_preprocess,
