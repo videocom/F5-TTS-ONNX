@@ -107,6 +107,7 @@ session_opts.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 session_opts.add_session_config_entry("session.intra_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
+session_opts.add_session_config_entry("session.set_denormal_as_zero", "1")
 
 
 ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, providers=['CPUExecutionProvider'])
@@ -154,9 +155,6 @@ out_name_C0 = out_name_C[0].name
 print(f"\nReference Audio: {reference_audio}")
 audio = np.array(AudioSegment.from_file(reference_audio).set_channels(1).set_frame_rate(SAMPLE_RATE).get_array_of_samples())
 audio_len = len(audio)
-audio = audio.astype(np.float32) / 32768.0
-if "float16" in model_type:
-    audio = audio.astype(np.float16)
 audio = audio.reshape(1, 1, -1)
 
 zh_pause_punc = r"。，、；：？！"
@@ -200,6 +198,5 @@ generated_signal = ort_session_C.run(
 end_count = time.time()
 
 # Save to audio
-generated_signal = generated_signal.astype(np.float32).reshape(-1)
-sf.write(generated_audio, generated_signal, SAMPLE_RATE, format='FLAC')
+sf.write(generated_audio, generated_signal.reshape(-1), SAMPLE_RATE, format='WAVEX')
 print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
