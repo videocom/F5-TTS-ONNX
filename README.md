@@ -4,7 +4,7 @@
 Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech processing.
 
 ### Updates  
-- **2024/11/28 Update**: The code has been updated to support the latest version of **SWivid/F5-TTS**, enabling successful export to ONNX format.  
+- **2024/12/22 Update**: The code has been updated to support the latest version of **SWivid/F5-TTS**, enabling successful export to ONNX format.  
   If you encountered errors with previous versions, please download the latest code and try again.
 
 ### Features  
@@ -33,7 +33,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
 通过 ONNX Runtime 运行 **F5-TTS**，实现高效灵活的文本转语音处理。
 
 ### 更新  
-- **2024/11/28 更新**：代码已更新以支持最新版本的 **SWivid/F5-TTS**，成功导出为 ONNX 格式。  
+- **2024/12/22 更新**：代码已更新以支持最新版本的 **SWivid/F5-TTS**，成功导出为 ONNX 格式。  
   如果您之前遇到错误，请下载最新代码并重试。
 
 ### 功能  
