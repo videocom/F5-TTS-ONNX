@@ -30,7 +30,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
    - Remember `pip install onnxruntime-openvino --upgrade` first.
    - Next, set `session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC` to reduce conflicts.
 3. **Intel OpenVINO**:
-   - If you are using a recent Intel chip, you can try `['OpenVINOExecutionProvider']` with provider_options `'device_type': 'XXX'`, where `XXX` can be one of the following options:  (No guarantee that it will work or function well.)
+   - If you are using a recent Intel chip, you can try `['OpenVINOExecutionProvider']` with provider_options `'device_type': 'XXX'`, where `XXX` can be one of the following options:  (No guarantee that it will work or function well)
      - `CPU`  
      - `GPU`  
      - `NPU`  
@@ -90,7 +90,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
    - 接下来，将`session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC`，以减少冲突。  
 
 **3. Intel OpenVINO：**  
-   - 如果您使用的是近期的Intel芯片，可以尝试`['OpenVINOExecutionProvider']`，并设置`provider_options`中的`'device_type': 'XXX'`，其中`XXX`可以是以下选项之一： (不能保证其能够正常运行或运行良好。)
+   - 如果您使用的是近期的Intel芯片，可以尝试`['OpenVINOExecutionProvider']`，并设置`provider_options`中的`'device_type': 'XXX'`，其中`XXX`可以是以下选项之一： (不能保证其能够正常运行或运行良好)
      - `CPU`  
      - `GPU`  
      - `NPU`  
