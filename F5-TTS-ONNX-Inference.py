@@ -22,6 +22,18 @@ gen_text             = "对，这就是我，万人敬仰的大可奇奇。"    
 
 ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
                                         # else keep empty.
+provider_options = []
+# For OpenVINOExecutionProvider
+# provider_options =
+# [{
+#    'device_type': 'CPU',
+#    'precision': 'ACCURACY',
+#    'num_of_threads': 8,
+#    'num_streams': 1,
+#    'enable_opencl_throttling': True,
+#    'enable_qdq_optimizer': True
+# }]
+
 HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
 SAMPLE_RATE = 24000                     # The generated audio sample rate
 RANDOM_SEED = 9527                      # Set seed to reproduce the generated audio
@@ -126,7 +138,7 @@ out_name_A5 = out_name_A[5].name
 out_name_A6 = out_name_A[6].name
 
 
-ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers)
+ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
 # For DirectML + AMD GPU, 
 # pip install onnxruntime-directml --upgrade
 # ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'])
