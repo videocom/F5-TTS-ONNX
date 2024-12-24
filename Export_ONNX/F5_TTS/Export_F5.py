@@ -7,6 +7,7 @@ import math
 import torch
 import torchaudio
 import jieba
+from pydub import AudioSegment
 from pypinyin import lazy_pinyin, Style
 import numpy as np
 from vocos import Vocos
