@@ -18,7 +18,7 @@ from STFT_Process import STFT_Process  # The custom STFT/ISTFT can be exported i
 
 
 F5_project_path      = "/home/DakeQQ/Downloads/F5-TTS-main"                                                    # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
-F5_safetensors_path  = "/home/DakeQQ/Downloads/F5-TTS_Emilia-ZH-EN/F5TTS_Base/model_1200000.safetensors"       # The F5-TTS model download path.           URL: https://huggingface.co/SWivid/F5-TTS/tree/main/F5TTS_Base
+F5_safetensors_path  = "/home/DakeQQ/Downloads/F5-TTS_Emilia-ZH-EN/model_1200000.safetensors"                  # The F5-TTS model download path.           URL: https://huggingface.co/SWivid/F5-TTS/tree/main/F5TTS_Base
 vocos_model_path     = "/home/DakeQQ/Downloads/vocos-mel-24khz"                                                # The Vocos model download path.            URL: https://huggingface.co/charactr/vocos-mel-24khz/tree/main
 onnx_model_A         = "/home/DakeQQ/Downloads/F5_ONNX/F5_Preprocess.onnx"                                     # The exported onnx model path.
 onnx_model_B         = "/home/DakeQQ/Downloads/F5_ONNX/F5_Transformer.onnx"                                    # The exported onnx model path.
