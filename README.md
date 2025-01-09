@@ -15,7 +15,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
      pip install onnxruntime-directml --upgrade
      ```
 2. **CPU Only**:
-   - For users with 'CPU only' setups, including Intel or AMD, you can try using `['OpenVINOExecutionProvider']` and adding `provider_options` for a slight performance boost of around 20%.
+   - For users with 'CPU only' setups, including Intel or AMD, you can try using `['OpenVINOExecutionProvider']` and adding `provider_options` for a slight performance boost of around 5~20%.
    - ```python
      provider_options = [{
         'device_type' : 'CPU',
@@ -75,7 +75,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
      pip install onnxruntime-directml --upgrade
      ```
 2. **仅CPU：**  
-   - 对于仅使用CPU的用户（包括Intel或AMD），可以尝试使用`['OpenVINOExecutionProvider']`并添加`provider_options`，以获得大约20%的性能提升。
+   - 对于仅使用CPU的用户（包括Intel或AMD），可以尝试使用`['OpenVINOExecutionProvider']`并添加`provider_options`，以获得大约5~20%的性能提升。
    - 示例代码：  
      ```python
      provider_options = [{
