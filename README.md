@@ -4,7 +4,7 @@
 Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech processing.
 
 ### Updates  
-- **2024/12/24 Update**: The code has been updated to support the latest version of [**SWivid/F5-TTS**](https://github.com/SWivid/F5-TTS), enabling successful export to ONNX format. Resolved issues with missing Python package imports. If you encountered errors with previous versions, please download the latest code and try again.
+- **2025/1/10 Update**: The code has been updated to support the latest version of [**SWivid/F5-TTS**](https://github.com/SWivid/F5-TTS), enabling successful export to ONNX format. Resolved issues with missing Python package imports. If you encountered errors with previous versions, please download the latest code and try again.
 - The latest version accepts audio in `int16` format (short) and also outputs in `int16` format. The previous version supported the float format, but it is no longer supported in the current Inference.py.
 
 ### Features  
@@ -51,6 +51,9 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
    - For NVIDIA GPU optimization with TensorRT, visit:  
      [F5-TTS-TRT](https://github.com/Bigfishering/f5-tts-trtllm/tree/main)
 
+6. **Download**
+   - [Link](https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX?usp=drive_link)
+
 ### Learn More  
 - Explore more related projects and resources:  
   [Project Overview](https://dakeqq.github.io/overview/)
@@ -71,7 +74,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
      ```bash
      pip install onnxruntime-directml --upgrade
      ```
-**2. 仅CPU：**  
+2. **仅CPU：**  
    - 对于仅使用CPU的用户（包括Intel或AMD），可以尝试使用`['OpenVINOExecutionProvider']`并添加`provider_options`，以获得大约20%的性能提升。
    - 示例代码：  
      ```python
@@ -87,7 +90,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
    - 请记得先执行 `pip install onnxruntime-openvino --upgrade`。  
    - 接下来，将`session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC`，以减少冲突。  
 
-**3. Intel OpenVINO：**  
+3. **Intel OpenVINO：**  
    - 如果您使用的是近期的Intel芯片，可以尝试`['OpenVINOExecutionProvider']`，并设置`provider_options`中的`'device_type': 'XXX'`，其中`XXX`可以是以下选项之一： (不能保证其能够正常运行或运行良好)
      - `CPU`  
      - `GPU`  
@@ -102,13 +105,15 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
      - `HETERO:NPU,GPU,CPU`
    - 请记得先执行 `pip install onnxruntime-openvino --upgrade`。  
    - 接下来，将`session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC`，以减少冲突。  
-3. **简单的图形界面版本**：  
+4. **简单的图形界面版本**：  
    - 体验简单易用的图形界面版本：  
      [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
 
-4. **支持 NVIDIA TensorRT**：  
+5. **支持 NVIDIA TensorRT**：  
    - 针对 NVIDIA GPU 的 TensorRT 优化，请访问：  
      [F5-TTS-TRT](https://github.com/Bigfishering/f5-tts-trtllm/tree/main)
+6. **Download**
+   - [Link](https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX?usp=drive_link)
 
 ### 了解更多  
 - 探索更多相关项目和资源：  
