@@ -10,7 +10,7 @@ from pypinyin import lazy_pinyin, Style
 
 F5_project_path      = "/home/DakeQQ/Downloads/F5-TTS-main"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
 onnx_model_A         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Preprocess.ort"                        # The exported onnx model path.
-onnx_model_B         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Transformer.ort"                       # The exported onnx model path.
+onnx_model_B         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Transformer.onnx"                      # The exported onnx model path.
 onnx_model_C         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Decode.ort"                            # The exported onnx model path.
 
 reference_audio      = "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"     # The reference audio path.
@@ -43,7 +43,7 @@ if "OpenVINOExecutionProvider" in ORT_Accelerate_Providers:
             'num_of_threads': 8,
             'num_streams': 1,
             'enable_opencl_throttling': True,
-            'enable_qdq_optimizer': True
+            'enable_qdq_optimizer': False
         }
     ]
 elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
