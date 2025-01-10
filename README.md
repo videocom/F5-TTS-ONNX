@@ -63,7 +63,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
 通过 ONNX Runtime 运行 **F5-TTS**，实现高效灵活的文本转语音处理。
 
 ### 更新  
-- **2024/12/24 更新**：代码已更新以支持最新版本的 [**SWivid/F5-TTS**](https://github.com/SWivid/F5-TTS)，成功导出为 ONNX 格式。修复了Python包导入丢失的问题。如果您之前遇到错误，请下载最新代码并重试。
+- **2025/1/10 更新**：代码已更新以支持最新版本的 [**SWivid/F5-TTS**](https://github.com/SWivid/F5-TTS)，成功导出为 ONNX 格式。修复了Python包导入丢失的问题。如果您之前遇到错误，请下载最新代码并重试。
 - 最新版本接收的音频格式为 `int16`（short），输出也是 `int16` 格式。上一版本支持 float 格式，但在当前的 Inference.py 中已不再支持。
 - `CUDAExecutionProvider` 由于未知问题无法正常工作。
 
