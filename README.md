@@ -27,8 +27,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
         'enable_qdq_optimizer': True
      }]
      ```
-   - Remember `pip install onnxruntime-openvino --upgrade` first.
-   - Next, set `session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC` to reduce conflicts.
+   - Remember `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml` first. Next `pip install onnxruntime-openvino --upgrade`.
 3. **Intel OpenVINO**:
    - If you are using a recent Intel chip, you can try `['OpenVINOExecutionProvider']` with provider_options `'device_type': 'XXX'`, where `XXX` can be one of the following options:  (No guarantee that it will work or function well)
      - `CPU`  
@@ -42,8 +41,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
      - `HETERO:NPU,GPU`  
      - `HETERO:GPU,CPU`  
      - `HETERO:NPU,GPU,CPU`
-   - Remember `pip install onnxruntime-openvino --upgrade` first.
-   - Next, set `session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC` to reduce conflicts.
+   - Remember `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml` first. Next `pip install onnxruntime-openvino --upgrade`.
 4. **Simple GUI Version**:  
    - Try the easy-to-use GUI version:  
      [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
@@ -89,8 +87,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
         'enable_qdq_optimizer': True
      }]
      ```  
-   - 请记得先执行 `pip install onnxruntime-openvino --upgrade`。  
-   - 接下来，将`session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC`，以减少冲突。  
+   - 请记得先执行 `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml`。 接下来 `pip install onnxruntime-openvino --upgrade`。 
 
 3. **Intel OpenVINO：**  
    - 如果您使用的是近期的Intel芯片，可以尝试`['OpenVINOExecutionProvider']`，并设置`provider_options`中的`'device_type': 'XXX'`，其中`XXX`可以是以下选项之一： (不能保证其能够正常运行或运行良好)
@@ -105,8 +102,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
      - `HETERO:NPU,GPU`  
      - `HETERO:GPU,CPU`  
      - `HETERO:NPU,GPU,CPU`
-   - 请记得先执行 `pip install onnxruntime-openvino --upgrade`。  
-   - 接下来，将`session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC`，以减少冲突。  
+   - 请记得先执行 `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml`。 接下来 `pip install onnxruntime-openvino --upgrade`。 
 4. **简单的图形界面版本**：  
    - 体验简单易用的图形界面版本：  
      [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
