@@ -24,7 +24,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
         'num_of_threads': MAX_THREADS,
         'num_streams': 1,
         'enable_opencl_throttling' : True,
-        'enable_qdq_optimizer': True
+        'enable_qdq_optimizer': False
      }]
      ```
    - Remember `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml` first. Next `pip install onnxruntime-openvino --upgrade`.
