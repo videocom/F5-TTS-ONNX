@@ -131,12 +131,11 @@ session_opts.inter_op_num_threads = 0     # Run different nodes with num_threads
 session_opts.intra_op_num_threads = 0     # Under the node, execute the operators with num_threads. Set 0 for auto.
 session_opts.enable_cpu_mem_arena = True  # True for execute speed; False for less memory usage.
 session_opts.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
-session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
 session_opts.add_session_config_entry("session.intra_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.set_denormal_as_zero", "1")
 
-
+session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, pproviders=['CPUExecutionProvider'], provider_options=None)
 model_type = ort_session_A._inputs_meta[0].type
 in_name_A = ort_session_A.get_inputs()
@@ -152,7 +151,7 @@ out_name_A4 = out_name_A[4].name
 out_name_A5 = out_name_A[5].name
 out_name_A6 = out_name_A[6].name
 
-
+session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
 ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
 # For DirectML + AMD GPU, 
 # pip install onnxruntime-directml --upgrade
@@ -169,7 +168,7 @@ in_name_B5 = in_name_B[5].name
 in_name_B6 = in_name_B[6].name
 out_name_B0 = out_name_B[0].name
 
-
+session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 ort_session_C = onnxruntime.InferenceSession(onnx_model_C, sess_options=session_opts, providers=['CPUExecutionProvider'], provider_options=None)
 in_name_C = ort_session_C.get_inputs()
 out_name_C = ort_session_C.get_outputs()
