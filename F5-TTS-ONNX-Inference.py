@@ -210,8 +210,7 @@ if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
     cat_mel_text = onnxruntime.OrtValue.ortvalue_from_numpy(cat_mel_text, 'cuda', 0)
     cat_mel_text_drop = onnxruntime.OrtValue.ortvalue_from_numpy(cat_mel_text_drop, 'cuda', 0)
     qk_rotated_empty = onnxruntime.OrtValue.ortvalue_from_numpy(qk_rotated_empty, 'cuda', 0)
-    io_binding = ort_session_B.io_binding()
-
+    
     inputs = {
         in_name_B0: (noise.element_type(), noise.data_ptr(), noise.shape()),
         in_name_B1: (rope_cos.element_type(), rope_cos.data_ptr(), rope_cos.shape()),
@@ -221,6 +220,7 @@ if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
         in_name_B5: (qk_rotated_empty.element_type(), qk_rotated_empty.data_ptr(), qk_rotated_empty.shape()),
     }
 
+    io_binding = ort_session_B.io_binding()
     for name, (dtype, buffer_ptr, shape) in inputs.items():
         io_binding.bind_input(
             name=name,
@@ -230,9 +230,9 @@ if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
             shape=shape,
             buffer_ptr=buffer_ptr
         )
-
-    NFE_STEP_minus = NFE_STEP - 1
     io_binding.bind_output(out_name_B0, 'cuda')
+  
+    NFE_STEP_minus = NFE_STEP - 1
     for i in range(NFE_STEP):
         print(f"NFE_STEP: {i}")
         time_step = onnxruntime.OrtValue.ortvalue_from_numpy(np.array(i, dtype=np.int32), 'cuda', 0)
