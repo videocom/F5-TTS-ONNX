@@ -19,13 +19,14 @@ ref_text             = "对，这就是我，万人敬仰的太乙真人。"    
 gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                            # The target TTS.
 
 
-ORT_Accelerate_Providers = []           # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
-                                        # else keep empty.
+ORT_Accelerate_Providers = ['OpenVINOExecutionProvider'] # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
+                                                         # else keep empty.
 HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
 SAMPLE_RATE = 24000                     # The generated audio sample rate
 RANDOM_SEED = 9527                      # Set seed to reproduce the generated audio
 NFE_STEP = 32                           # F5-TTS model setting
 SPEED = 1.0                             # Set for talking speed. Only works with dynamic_axes=True
+MAX_THREADS = 8
 
 
 with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
@@ -40,7 +41,7 @@ if "OpenVINOExecutionProvider" in ORT_Accelerate_Providers:
         {
             'device_type': 'CPU',
             'precision': 'ACCURACY',
-            'num_of_threads': 8,
+            'num_of_threads': MAX_THREADS,
             'num_streams': 1,
             'enable_opencl_throttling': True,
             'enable_qdq_optimizer': False
@@ -51,13 +52,13 @@ elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
         {
             'device_id': 0,
             'gpu_mem_limit': 8 * 1024 * 1024 * 1024,  # 8 GB
-            'arena_extend_strategy': 'kNextPowerOfTwo',
+            'arena_extend_strategy': 'kSameAsRequested',
             'cudnn_conv_algo_search': 'EXHAUSTIVE',
             'cudnn_conv_use_max_workspace': '1',
             'do_copy_in_default_stream': '1',
             'cudnn_conv1d_pad_to_nc1d': '1',
             'enable_cuda_graph': '0',  # Set to '0' to avoid potential errors when enabled.
-            'use_tf32': '1'  # Float16 doesn't work due to unknown issue. 
+            'use_tf32': '1'            # Float16 doesn't work on F5_transformer.onnx with CUDA
         }
     ]
 else:
@@ -127,17 +128,17 @@ def list_str_to_idx(
 # ONNX Runtime settings
 onnxruntime.set_seed(RANDOM_SEED)
 session_opts = onnxruntime.SessionOptions()
-session_opts.log_severity_level = 3       # error level, it an adjustable value.
-session_opts.inter_op_num_threads = 0     # Run different nodes with num_threads. Set 0 for auto.
-session_opts.intra_op_num_threads = 0     # Under the node, execute the operators with num_threads. Set 0 for auto.
-session_opts.enable_cpu_mem_arena = True  # True for execute speed; False for less memory usage.
+session_opts.log_severity_level = 3                 # error level, it an adjustable value.
+session_opts.inter_op_num_threads = MAX_THREADS     # Run different nodes with num_threads. Set 0 for auto.
+session_opts.intra_op_num_threads = MAX_THREADS     # Under the node, execute the operators with num_threads. Set 0 for auto.
+session_opts.enable_cpu_mem_arena = True            # True for execute speed; False for less memory usage.
 session_opts.execution_mode = onnxruntime.ExecutionMode.ORT_SEQUENTIAL
 session_opts.add_session_config_entry("session.intra_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.set_denormal_as_zero", "1")
 
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
-ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, pproviders=['CPUExecutionProvider'], provider_options=None)
+ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, providers=['CPUExecutionProvider'], provider_options=None)
 model_type = ort_session_A._inputs_meta[0].type
 in_name_A = ort_session_A.get_inputs()
 out_name_A = ort_session_A.get_outputs()
@@ -191,7 +192,6 @@ ref_audio_len = audio_len // HOP_LENGTH + 1
 max_duration = np.array(ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / SPEED), dtype=np.int64)
 gen_text = convert_char_to_pinyin([ref_text + gen_text])
 text_ids = list_str_to_idx(gen_text, vocab_char_map).numpy()
-time_step = np.array(0, dtype=np.int32)
 
 print("\n\nRun F5-TTS by ONNX Runtime.")
 start_count = time.time()
@@ -202,20 +202,76 @@ noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, qk_rotated_empty, re
             in_name_A1: text_ids,
             in_name_A2: max_duration
         })
-while time_step < NFE_STEP:
-    print(f"NFE_STEP: {time_step}")
-    noise = ort_session_B.run(
-        [out_name_B0],
-        {
-            in_name_B0: noise,
-            in_name_B1: rope_cos,
-            in_name_B2: rope_sin,
-            in_name_B3: cat_mel_text,
-            in_name_B4: cat_mel_text_drop,
-            in_name_B5: qk_rotated_empty,
-            in_name_B6: time_step
-        })[0]
-    time_step += 1
+
+if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
+    noise = onnxruntime.OrtValue.ortvalue_from_numpy(noise, 'cuda', 0)
+    rope_cos = onnxruntime.OrtValue.ortvalue_from_numpy(rope_cos, 'cuda', 0)
+    rope_sin = onnxruntime.OrtValue.ortvalue_from_numpy(rope_sin, 'cuda', 0)
+    cat_mel_text = onnxruntime.OrtValue.ortvalue_from_numpy(cat_mel_text, 'cuda', 0)
+    cat_mel_text_drop = onnxruntime.OrtValue.ortvalue_from_numpy(cat_mel_text_drop, 'cuda', 0)
+    qk_rotated_empty = onnxruntime.OrtValue.ortvalue_from_numpy(qk_rotated_empty, 'cuda', 0)
+    io_binding = ort_session_B.io_binding()
+
+    inputs = {
+        in_name_B0: (noise.element_type(), noise.data_ptr(), noise.shape()),
+        in_name_B1: (rope_cos.element_type(), rope_cos.data_ptr(), rope_cos.shape()),
+        in_name_B2: (rope_sin.element_type(), rope_sin.data_ptr(), rope_sin.shape()),
+        in_name_B3: (cat_mel_text.element_type(), cat_mel_text.data_ptr(), cat_mel_text.shape()),
+        in_name_B4: (cat_mel_text_drop.element_type(), cat_mel_text_drop.data_ptr(), cat_mel_text_drop.shape()),
+        in_name_B5: (qk_rotated_empty.element_type(), qk_rotated_empty.data_ptr(), qk_rotated_empty.shape()),
+    }
+
+    for name, (dtype, buffer_ptr, shape) in inputs.items():
+        io_binding.bind_input(
+            name=name,
+            device_type=noise.device_name(),
+            device_id=0,
+            element_type=dtype,
+            shape=shape,
+            buffer_ptr=buffer_ptr
+        )
+
+    NFE_STEP_minus = NFE_STEP - 1
+    io_binding.bind_output(out_name_B0, 'cuda')
+    for i in range(NFE_STEP):
+        print(f"NFE_STEP: {i}")
+        time_step = onnxruntime.OrtValue.ortvalue_from_numpy(np.array(i, dtype=np.int32), 'cuda', 0)
+        io_binding.bind_input(
+            name=in_name_B6,
+            device_type=time_step.device_name(),
+            device_id=0,
+            element_type=time_step.element_type(),
+            shape=time_step.shape(),
+            buffer_ptr=time_step.data_ptr()
+        )
+        ort_session_B.run_with_iobinding(io_binding)
+
+        noise = io_binding.get_outputs()[0]
+        if i < NFE_STEP_minus:
+            io_binding.bind_input(
+                name=in_name_B0,
+                device_type=noise.device_name(),
+                device_id=0,
+                element_type=noise.element_type(),
+                shape=noise.shape(),
+                buffer_ptr=noise.data_ptr()
+            )
+    noise = onnxruntime.OrtValue.numpy(noise)
+else:
+    for i in range(NFE_STEP):
+        print(f"NFE_STEP: {i}")
+        noise = ort_session_B.run(
+            [out_name_B0],
+            {
+                in_name_B0: noise,
+                in_name_B1: rope_cos,
+                in_name_B2: rope_sin,
+                in_name_B3: cat_mel_text,
+                in_name_B4: cat_mel_text_drop,
+                in_name_B5: qk_rotated_empty,
+                in_name_B6: np.array(i, dtype=np.int32)
+            })[0]
+
 generated_signal = ort_session_C.run(
         [out_name_C0],
         {
