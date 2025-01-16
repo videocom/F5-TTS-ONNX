@@ -52,11 +52,11 @@ elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
         {
             'device_id': DEVICE_ID,
             'gpu_mem_limit': 8 * 1024 * 1024 * 1024,  # 8 GB
-            'arena_extend_strategy': 'kSameAsRequested',
+            'arena_extend_strategy': 'kNextPowerOfTwo',
             'cudnn_conv_algo_search': 'EXHAUSTIVE',
             'cudnn_conv_use_max_workspace': '1',
             'do_copy_in_default_stream': '1',
-            'cudnn_conv1d_pad_to_nc1d': '0',
+            'cudnn_conv1d_pad_to_nc1d': '1',
             'enable_cuda_graph': '0',  # Set to '0' to avoid potential errors when enabled.
             'use_tf32': '1'            # Float16 doesn't work on F5_transformer.onnx with CUDA
         }
