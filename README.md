@@ -44,11 +44,12 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
    - Remember `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml` first. Next `pip install onnxruntime-openvino --upgrade`.
 4. **Simple GUI Version**:  
    - Try the easy-to-use GUI version:  
-     [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
+      - [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
 
 5. **NVIDIA TensorRT Support**:  
    - For NVIDIA GPU optimization with TensorRT, visit:  
-     [F5-TTS-TRT](https://github.com/Bigfishering/f5-tts-trtllm/tree/main)
+      - [F5-TTS-TRT](https://github.com/Bigfishering/f5-tts-trtllm/tree/main)
+      - [F5_TTS_Faster](https://github.com/WGS-note/F5_TTS_Faster)
 
 6. **Download**
    - [Link](https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX?usp=drive_link)
@@ -105,11 +106,13 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
    - 请记得先执行 `pip uninstall onnxruntime-gpu` and `pip uninstall onnxruntime-directml`。 接下来 `pip install onnxruntime-openvino --upgrade`。 
 4. **简单的图形界面版本**：  
    - 体验简单易用的图形界面版本：  
-     [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
+      - [F5-TTS-ONNX GUI](https://github.com/patientx/F5-TTS-ONNX-gui)
 
 5. **支持 NVIDIA TensorRT**：  
    - 针对 NVIDIA GPU 的 TensorRT 优化，请访问：  
-     [F5-TTS-TRT](https://github.com/Bigfishering/f5-tts-trtllm/tree/main)
+      - [F5-TTS-TRT](https://github.com/Bigfishering/f5-tts-trtllm/tree/main)
+      - [F5_TTS_Faster](https://github.com/WGS-note/F5_TTS_Faster)
+
 6. **Download**
    - [Link](https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX?usp=drive_link)
 
