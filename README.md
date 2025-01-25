@@ -56,7 +56,7 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
 
 ### Learn More  
 - Explore more related projects and resources:  
-  [Project Overview](https://dakeqq.github.io/overview/)
+  [Project Overview](https://github.com/DakeQQ?tab=repositories)
 
 ---
 
@@ -118,6 +118,6 @@ Run **F5-TTS** using ONNX Runtime for efficient and flexible text-to-speech proc
 
 ### 了解更多  
 - 探索更多相关项目和资源：  
-  [项目概览](https://dakeqq.github.io/overview/)
+  [项目概览](https://github.com/DakeQQ?tab=repositories)
 
 ---  
