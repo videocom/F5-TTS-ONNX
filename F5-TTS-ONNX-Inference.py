@@ -8,13 +8,14 @@ import soundfile as sf
 from pydub import AudioSegment
 from pypinyin import lazy_pinyin, Style
 
-F5_project_path      = "/home/DakeQQ/Downloads/F5-TTS-main"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
-onnx_model_A         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Preprocess.ort"                        # The exported onnx model path.
-onnx_model_B         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Transformer.onnx"                      # The exported onnx model path.
-onnx_model_C         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Decode.ort"                            # The exported onnx model path.
 
-reference_audio      = "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"     # The reference audio path.
-generated_audio      = "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"        # The generated audio path.
+F5_project_path      = "c:/git/F5-TTS"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+onnx_model_A         = "c:/Test/F5/models/fp32/F5_Preprocess.onnx"                        # The exported onnx model path.
+onnx_model_B         = "c:/Test/F5/models/fp32/F5_Transformer.onnx"                      # The exported onnx model path.
+onnx_model_C         = "c:/Test/F5/models/fp32/F5_Decode.onnx"                            # The exported onnx model path.
+
+reference_audio      = "c:/Test/F5/basic_ref_zh.wav"     # The reference audio path.
+generated_audio      = "c:/Test/F5/generated.wav"        # The generated audio path.
 ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                            # The ASR result of reference audio.
 gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                            # The target TTS.
 
@@ -39,12 +40,14 @@ vocab_size = len(vocab_char_map)
 if "OpenVINOExecutionProvider" in ORT_Accelerate_Providers:
     provider_options = [
         {
-            'device_type': 'CPU',
-            'precision': 'ACCURACY',
+            'device_type': 'GPU',
+           # 'precision': 'ACCURACY',
+            'precision': 'FP16',
             'num_of_threads': MAX_THREADS,
             'num_streams': 1,
             'enable_opencl_throttling': True,
-            'enable_qdq_optimizer': False
+            # 'enable_qdq_optimizer': False,
+            'cache_dir': "c:/temp/ov"
         }
     ]
 elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
