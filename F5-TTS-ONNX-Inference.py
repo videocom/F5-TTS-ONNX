@@ -7,9 +7,13 @@ import onnxruntime
 import soundfile as sf
 from pydub import AudioSegment
 from pypinyin import lazy_pinyin, Style
+import onnxruntime.tools.add_openvino_win_libs as utils
+utils.add_openvino_libs_to_path()
 
+# Exported models  https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX
 
 F5_project_path      = "c:/git/F5-TTS"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+
 onnx_model_A         = "c:/Test/F5/models/fp32/F5_Preprocess.onnx"                        # The exported onnx model path.
 onnx_model_B         = "c:/Test/F5/models/fp32/F5_Transformer.onnx"                      # The exported onnx model path.
 onnx_model_C         = "c:/Test/F5/models/fp32/F5_Decode.onnx"                            # The exported onnx model path.
