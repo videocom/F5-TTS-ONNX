@@ -10,13 +10,15 @@ from pypinyin import lazy_pinyin, Style
 import onnxruntime.tools.add_openvino_win_libs as utils
 utils.add_openvino_libs_to_path()
 
+
 # Exported models  https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX
 
 F5_project_path      = "c:/git/F5-TTS"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
 
-onnx_model_A         = "c:/Test/F5/models/fp32/F5_Preprocess.onnx"                        # The exported onnx model path.
-onnx_model_B         = "c:/Test/F5/models/fp32/F5_Transformer.onnx"                      # The exported onnx model path.
-onnx_model_C         = "c:/Test/F5/models/fp32/F5_Decode.onnx"                            # The exported onnx model path.
+onnx_model_A         = "c:/Test/F5/models/fp16/F5_Preprocess.onnx"                        # The exported onnx model path.
+onnx_model_B         = "c:/Test/F5/models/fp16/F5_Transformer.onnx"                      # The exported onnx model path.
+onnx_model_C         = "c:/Test/F5/models/fp16/F5_Decode.onnx"                            # The exported onnx model path.
+cache_dir            = "c:/temp/ov"
 
 reference_audio      = "c:/Test/F5/basic_ref_zh.wav"     # The reference audio path.
 generated_audio      = "c:/Test/F5/generated.wav"        # The generated audio path.
@@ -45,13 +47,13 @@ if "OpenVINOExecutionProvider" in ORT_Accelerate_Providers:
     provider_options = [
         {
             'device_type': 'GPU',
-           # 'precision': 'ACCURACY',
-            'precision': 'FP16',
+            'precision': 'ACCURACY',
+            #'precision': 'FP32',
             'num_of_threads': MAX_THREADS,
             'num_streams': 1,
             'enable_opencl_throttling': True,
-            # 'enable_qdq_optimizer': False,
-            'cache_dir': "c:/temp/ov"
+            'enable_qdq_optimizer': False,
+            'cache_dir': cache_dir
         }
     ]
 elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
@@ -145,6 +147,8 @@ session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.set_denormal_as_zero", "1")
 
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+
 ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, providers=['CPUExecutionProvider'], provider_options=None)
 model_type = ort_session_A._inputs_meta[0].type
 in_name_A = ort_session_A.get_inputs()
@@ -160,12 +164,16 @@ out_name_A4 = out_name_A[4].name
 out_name_A5 = out_name_A[5].name
 out_name_A6 = out_name_A[6].name
 
-session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
+#session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
+#https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html#onnxruntime-graph-level-optimization
+
+session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+
 ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
 # For DirectML + AMD GPU, 
 # pip install onnxruntime-directml --upgrade
 # ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'])
-print(f"\nUsable Providers: {ort_session_B.get_providers()}")
+print(f"\nUsable Providers Session B: {ort_session_B.get_providers()}")
 in_name_B = ort_session_B.get_inputs()
 out_name_B = ort_session_B.get_outputs()
 in_name_B0 = in_name_B[0].name
@@ -178,6 +186,7 @@ in_name_B6 = in_name_B[6].name
 out_name_B0 = out_name_B[0].name
 
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
 ort_session_C = onnxruntime.InferenceSession(onnx_model_C, sess_options=session_opts, providers=['CPUExecutionProvider'], provider_options=None)
 in_name_C = ort_session_C.get_inputs()
 out_name_C = ort_session_C.get_outputs()
@@ -262,7 +271,7 @@ if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
     noise = onnxruntime.OrtValue.numpy(noise)
 else:
     for i in range(NFE_STEP):
-        print(f"NFE_STEP: {i}")
+        print(f"NFE_STEP: {i} of {NFE_STEP}")
         noise = ort_session_B.run(
             [out_name_B0],
             {
@@ -275,6 +284,7 @@ else:
                 in_name_B6: np.array(i, dtype=np.int32)
             })[0]
 
+        
 generated_signal = ort_session_C.run(
         [out_name_C0],
         {
