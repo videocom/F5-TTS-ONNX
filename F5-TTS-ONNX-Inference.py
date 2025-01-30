@@ -159,6 +159,7 @@ ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_
 # pip install onnxruntime-directml --upgrade
 # ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'])
 print(f"\nUsable Providers: {ort_session_B.get_providers()}")
+model_dtype = ort_session_B._inputs_meta[0].type
 in_name_B = ort_session_B.get_inputs()
 out_name_B = ort_session_B.get_outputs()
 in_name_B0 = in_name_B[0].name
@@ -202,6 +203,14 @@ noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, qk_rotated_empty, re
             in_name_A1: text_ids,
             in_name_A2: max_duration
         })
+
+if 'float16' in model_dtype:
+    noise = noise.astype(np.float16)
+    rope_cos = rope_cos.astype(np.float16)
+    rope_sin = rope_sin.astype(np.float16)
+    cat_mel_text = cat_mel_text.astype(np.float16)
+    cat_mel_text_drop = cat_mel_text_drop.astype(np.float16)
+    qk_rotated_empty = qk_rotated_empty.astype(np.float16)
 
 if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
     noise = onnxruntime.OrtValue.ortvalue_from_numpy(noise, 'cuda', DEVICE_ID)
@@ -268,6 +277,9 @@ else:
                 in_name_B6: np.array(i, dtype=np.int32)
             })[0]
 
+if 'float16' in model_dtype:
+    noise = noise.astype(np.float32)
+    
 generated_signal = ort_session_C.run(
         [out_name_C0],
         {
