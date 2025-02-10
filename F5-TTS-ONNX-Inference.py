@@ -13,17 +13,21 @@ utils.add_openvino_libs_to_path()
 
 # Exported models  https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX
 
-F5_project_path      = "c:/git/F5-TTS"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+F5_project_path      = "c:/git/F5-TTS"   # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
 
 onnx_model_A         = "c:/Test/F5/models/fp16/F5_Preprocess.onnx"                        # The exported onnx model path.
 onnx_model_B         = "c:/Test/F5/models/fp16/F5_Transformer.onnx"                      # The exported onnx model path.
 onnx_model_C         = "c:/Test/F5/models/fp16/F5_Decode.onnx"                            # The exported onnx model path.
 cache_dir            = "c:/temp/ov"
 
-reference_audio      = "c:/Test/F5/basic_ref_zh.wav"     # The reference audio path.
+#reference_audio      = "c:/Test/F5/basic_ref_zh.wav"     # The reference audio path.
+#ref_text             = "对，这就是我，万人敬仰的太乙真人。" 
+#gen_text             = "对，这就是我，万人敬仰的大可奇奇。"  
+
+reference_audio      = "c:/Test/F5/basic_ref_en.wav"     # The reference audio path.
+ref_text             = "Some call me nature, others call me mother nature" 
+gen_text             = "Let's try to generate some audio, its going to be interesting"       # The target TTS.
 generated_audio      = "c:/Test/F5/generated.wav"        # The generated audio path.
-ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                            # The ASR result of reference audio.
-gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                            # The target TTS.
 
 
 ORT_Accelerate_Providers = ['OpenVINOExecutionProvider'] # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
@@ -47,8 +51,8 @@ if "OpenVINOExecutionProvider" in ORT_Accelerate_Providers:
     provider_options = [
         {
             'device_type': 'GPU',
-            'precision': 'ACCURACY',
-            #'precision': 'FP32',
+            #'precision': 'ACCURACY',
+            'precision': 'FP32',
             'num_of_threads': MAX_THREADS,
             'num_streams': 1,
             'enable_opencl_throttling': True,
@@ -165,15 +169,18 @@ out_name_A5 = out_name_A[5].name
 out_name_A6 = out_name_A[6].name
 
 #session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
+
+session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
 #https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html#onnxruntime-graph-level-optimization
 
-session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+#session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
 
-ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
+#ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
 # For DirectML + AMD GPU, 
 # pip install onnxruntime-directml --upgrade
-# ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'])
+ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'],provider_options = [{'device_id': 0}]  )
 print(f"\nUsable Providers Session B: {ort_session_B.get_providers()}")
+model_dtype = ort_session_B._inputs_meta[0].type
 in_name_B = ort_session_B.get_inputs()
 out_name_B = ort_session_B.get_outputs()
 in_name_B0 = in_name_B[0].name
@@ -218,6 +225,15 @@ noise, rope_cos, rope_sin, cat_mel_text, cat_mel_text_drop, qk_rotated_empty, re
             in_name_A1: text_ids,
             in_name_A2: max_duration
         })
+
+if 'float16' in model_dtype:
+    noise = noise.astype(np.float16)
+    rope_cos = rope_cos.astype(np.float16)
+    rope_sin = rope_sin.astype(np.float16)
+    cat_mel_text = cat_mel_text.astype(np.float16)
+    cat_mel_text_drop = cat_mel_text_drop.astype(np.float16)
+    qk_rotated_empty = qk_rotated_empty.astype(np.float16)
+
 
 if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
     noise = onnxruntime.OrtValue.ortvalue_from_numpy(noise, 'cuda', DEVICE_ID)
@@ -283,7 +299,9 @@ else:
                 in_name_B5: qk_rotated_empty,
                 in_name_B6: np.array(i, dtype=np.int32)
             })[0]
-
+            
+#if 'float16' in model_dtype:    # if using fp32 for model C ?
+#    noise = noise.astype(np.float32)
         
 generated_signal = ort_session_C.run(
         [out_name_C0],
