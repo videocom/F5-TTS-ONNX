@@ -179,7 +179,7 @@ class F5Decode(torch.nn.Module):
         super(F5Decode, self).__init__()
         self.vocos = vocos
         self.custom_istft = custom_istft
-        self.target_rms = target_rms * 32768.0
+        self.target_rms = float(target_rms * 32768.0)
 
     def forward(self,
                 denoised: torch.FloatTensor,
