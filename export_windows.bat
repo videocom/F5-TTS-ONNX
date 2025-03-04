@@ -1,7 +1,6 @@
 @echo off
 chcp 65001
 
-SET "ONNX_RUNTIME_VERSION=1.20.1"
 
 pushd %~dp0
 
@@ -59,33 +58,31 @@ if NOT EXIST "%VOCOS_DIR%" (
 
 pushd %SCRIPT_DIR%
 
-@echo Use onnxruntime version %ONNX_RUNTIME_VERSION%
 @echo.
-python -m pip install onnxruntime==%ONNX_RUNTIME_VERSION%
-python -m pip install onnxslim --upgrade
+pip install onnxruntime-tools==1.7.0
+pip install onnxslim onnxconverter_common --upgrade
 
-@REM Recover bellow, if you want to use directml
-@rem pip uninstall onnxruntime onnxruntime-gpu onnxruntime-tools -y
-@rem python -m pip install onnxruntime-directml
+@REM Use bellow, if you want to use directml
+@rem pip uninstall onnxruntime onnxruntime-gpu -y
+@rem python -m pip install --force-reinstall onnxruntime-directml
 
 @rem change code for windows
 @echo modify code ...
 @echo.
 @echo modify %EXPORT_PY_FILE%
+
+call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav" "%EXPORT_DIR%/infer_result.wav"
 call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5-TTS-main" "%F5_TTS_PROJECT_DIR%"
 call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5TTS_Base" "%F5_TTS_MODEL_DIR%/F5TTS_Base"
 call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/vocos-mel-24khz" "%VOCOS_DIR%"
 call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5_ONNX/" "%EXPORT_DIR%/"
 
-@echo modify %EXPORT_PY_FILE%
-call:ReplaceString "%INFER_PY_FILE%" "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav" "%EXPORT_DIR%/test_result.wav"
-call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5-TTS-main" "%F5_TTS_PROJECT_DIR%"
-call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5TTS_Base" "%F5_TTS_MODEL_DIR%/F5TTS_Base"
-call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/vocos-mel-24khz" "%VOCOS_DIR%"
-call:ReplaceString "%EXPORT_PY_FILE%" "/home/DakeQQ/Downloads/F5_ONNX/" "%EXPORT_DIR%/"
+@echo modify %OPTIMIZE_PY_FILE%
+call:ReplaceString "%OPTIMIZE_PY_FILE%" "/home/DakeQQ/Downloads/F5_ONNX" "%EXPORT_DIR:/=\\%"
+call:ReplaceString "%OPTIMIZE_PY_FILE%" "/home/DakeQQ/Downloads/F5_Optimized" "%EXPORT_OP_DIR:/=\\%"
 
 
-@echo modify "%INFER_PY_FILE%"
+@echo modify %INFER_PY_FILE%
 call:ReplaceString "%INFER_PY_FILE%" "F5_Preprocess.ort" "F5_Preprocess.onnx"
 call:ReplaceString "%INFER_PY_FILE%" "F5_Decode.ort" "F5_Decode.onnx"
 call:ReplaceString "%INFER_PY_FILE%" "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav" "%EXPORT_DIR%/infer_result.wav"
@@ -97,23 +94,32 @@ call:ReplaceString "%INFER_PY_FILE%" "/home/DakeQQ/Downloads/F5_Optimized/" "%EX
 
 cd "%SCRIPT_DIR%/Export_ONNX/F5_TTS"
 
-python ./Export_F5.py
-python ./Optimize_ONNX.py
+python ./Export_F5.py || goto OnError
 
-@REM If you want to inference, relplace above to bellow:
-@REM pushd "%SCRIPT_DIR%"
-@REM python ./F5-TTS-ONNX-Inference.py
+@echo All Model Exported, Wait Optimize ...
+
+python ./Optimize_ONNX.py --model "F5_Preprocess.onnx"
+python ./Optimize_ONNX.py --model "F5_Transformer.onnx"
+python ./Optimize_ONNX.py --model "F5_Decode.onnx"
+
+echo.
+@echo All Done !!
+
+@REM If you want to inference, use bellow:
+@REM python "%SCRIPT_DIR%/F5-TTS-ONNX-Inference.py"
 
 
-@echo Processed !
-
-pause
-
-@rem restore code
-
-git checkout -- Export_F5.py
-git checkout -- Optimize_ONNX.py
+@rem restore code ? if you want
+@rem git checkout -- Export_F5.py
+@rem git checkout -- Optimize_ONNX.py
 exit
+
+:OnError
+echo.
+echo Process failed !!!!
+echo.
+exit
+GOTO:EOF
 
 
 :ReplaceString
