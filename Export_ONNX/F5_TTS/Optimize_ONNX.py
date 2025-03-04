@@ -1,16 +1,23 @@
 import gc
 import os
 import subprocess
+import argparse
 
 import onnx.version_converter
 from onnxruntime.transformers.optimizer import optimize_model
 from onnxslim import slim
 
+parser = argparse.ArgumentParser(description='argument for each file')
+parser.add_argument("--model", type=str, default="F5_Preprocess.onnx")
+args = parser.parse_args()
+
+print("model: ", args.model)
+
 # Path Setting
 original_folder_path = "/home/DakeQQ/Downloads/F5_ONNX"                                 # The fp32 saved folder.
 optimized_folder_path = "/home/DakeQQ/Downloads/F5_Optimized"                           # The optimized folder.
-model_path = os.path.join(original_folder_path, "F5_Preprocess.onnx")                   # The original fp32 model name.  Must use "CPUExecutionProvider"
-optimized_model_path = os.path.join(optimized_folder_path, "F5_Preprocess.onnx")        # The optimized model name.
+model_path = os.path.join(original_folder_path, args.model)                   # The original fp32 model name.  Must use "CPUExecutionProvider"
+optimized_model_path = os.path.join(optimized_folder_path, args.model)        # The optimized model name.
 
 # model_path = os.path.join(original_folder_path, "F5_Transformer.onnx")                # The original fp32 model name.
 # optimized_model_path = os.path.join(optimized_folder_path, "F5_Transformer.onnx")     # The optimized model name.
