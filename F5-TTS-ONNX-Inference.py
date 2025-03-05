@@ -58,7 +58,7 @@ elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
             'do_copy_in_default_stream': '1',
             'cudnn_conv1d_pad_to_nc1d': '1',
             'enable_cuda_graph': '0',  # Set to '0' to avoid potential errors when enabled.
-            'use_tf32': '1'            # Float16 doesn't work on F5_transformer.onnx with CUDA
+            'use_tf32': '0'            
         }
     ]
 else:
