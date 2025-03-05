@@ -16,8 +16,11 @@ print("model: ", args.model)
 # Path Setting
 original_folder_path = "/home/DakeQQ/Downloads/F5_ONNX"                                 # The fp32 saved folder.
 optimized_folder_path = "/home/DakeQQ/Downloads/F5_Optimized"                           # The optimized folder.
-model_path = os.path.join(original_folder_path, args.model)                   # The original fp32 model name.  Must use "CPUExecutionProvider"
-optimized_model_path = os.path.join(optimized_folder_path, args.model)        # The optimized model name.
+model_path = os.path.join(original_folder_path, args.model)                             # The original fp32 model name.
+optimized_model_path = os.path.join(optimized_folder_path, args.model)                  # The optimized model name.
+
+# model_path = os.path.join(original_folder_path, "F5_Preprocess.onnx")                 # The original fp32 model name.
+# optimized_model_path = os.path.join(optimized_folder_path, "F5_Preprocess.onnx")      # The optimized model name.
 
 # model_path = os.path.join(original_folder_path, "F5_Transformer.onnx")                # The original fp32 model name.
 # optimized_model_path = os.path.join(optimized_folder_path, "F5_Transformer.onnx")     # The optimized model name.
@@ -26,7 +29,7 @@ optimized_model_path = os.path.join(optimized_folder_path, args.model)        # 
 # optimized_model_path = os.path.join(optimized_folder_path, "F5_Decode.onnx")          # The optimized model name.
 
 use_gpu_fp16 = False                                                                    # If true, the transformers.optimizer will remain the FP16 processes.
-provider = 'CPUExecutionProvider'                                                       # ['CPUExecutionProvider', 'CUDAExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider']
+provider = 'CPUExecutionProvider'                                                       # ['CPUExecutionProvider', 'CUDAExecutionProvider']
 target_platform = "amd64"                                                               # ['arm', 'amd64']; The 'amd64' means x86_64 desktop, not means the AMD chip.
 
 
@@ -52,13 +55,6 @@ if provider != "OpenVINOExecutionProvider":
                            provider=provider,
                            verbose=False,
                            model_type='bert')
-    if use_gpu_fp16:
-        model.convert_float_to_float16(
-            keep_io_types=False,
-            force_fp16_initializers=True,
-            use_symbolic_shape_infer=True,      # True for more optimize but may get errors.
-            op_block_list=['DynamicQuantizeLinear', 'DequantizeLinear', 'DynamicQuantizeMatMul', 'Range', 'MatMulIntegerToFloat']
-        )
     model.save_model_to_file(optimized_model_path, use_external_data_format=False)
     del model
     gc.collect()
