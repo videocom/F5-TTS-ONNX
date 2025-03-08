@@ -1,0 +1,12 @@
+torch
+pydub
+jieba
+pypinyin
+soundfile
+
+# DirectML
+onnxruntime_directml===1.20.1
+
+# Openvino
+openvino==2024.4.0
+onnxruntime-openvino==1.20.0
