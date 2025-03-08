@@ -5,6 +5,8 @@ import onnxruntime
 import soundfile as sf
 from pydub import AudioSegment
 import onnxruntime.tools.add_openvino_win_libs as utils
+import argparse
+
 utils.add_openvino_libs_to_path()
 
 
@@ -14,20 +16,27 @@ utils.add_openvino_libs_to_path()
 # We take vocab.txt from  https://github.com/SWivid/F5-TTSdata/Emilia_ZH_EN_pinyin/vocab.txt 
 # These models and vocab.txt is expected to be located in model_dir
 
-model_dir            = "c:/Test/F5/models/mixed"
+parser = argparse.ArgumentParser(description="F5-TTS ONNX Inference")
+parser.add_argument('--args_file', type=str, help='Path to args.toml file', default=None)
+parser.add_argument('--model_dir', type=str, default="c:/Test/F5/models/mixed")
+parser.add_argument('--ref_audio', type=str, default="c:/Test/F5/basic_ref_en.wav")
+parser.add_argument('--ref_text', type=str, default="Some call me nature, others call me mother nature")
+parser.add_argument('--gen_text', type=str, default="Let's try to generate some audio, its going to be interesting")
+parser.add_argument('--gen_audio', type=str, default="c:/Test/F5/generated.wav")
+parser.add_argument('--cache_dir', type=str, default="c:/temp/ov")
 
-onnx_model_A         = f"{model_dir}/F5_Preprocess.ort"
-onnx_model_B         = f"{model_dir}/F5_Transformer.onnx"
-onnx_model_C         = f"{model_dir}/F5_Decode.ort"
+args = parser.parse_args()
 
+model_dir = args.model_dir
+ref_audio = args.ref_audio
+ref_text = args.ref_text
+gen_text = args.gen_text
+gen_audio = args.gen_audio
+cache_dir = args.cache_dir
 
-cache_dir            = "c:/temp/ov"
- 
-
-ref_audio            = "c:/Test/F5/basic_ref_en.wav"     # The reference audio path.
-ref_text             = "Some call me nature, others call me mother nature" 
-gen_text             = "Let's try to generate some audio, its going to be interesting"       # The target TTS.
-gen_audio            = "c:/Test/F5/generated.wav"        # The generated audio path.
+onnx_model_A = f"{model_dir}/F5_Preprocess.ort"
+onnx_model_B = f"{model_dir}/F5_Transformer.onnx"
+onnx_model_C = f"{model_dir}/F5_Decode.ort"
 
 
 HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
@@ -58,9 +67,6 @@ with open(f"{model_dir}/vocab.txt", "r", encoding="utf-8") as f:
     for i, char in enumerate(f):
         vocab_char_map[char[:-1]] = i
 vocab_size = len(vocab_char_map)
-
-
-
 
 
 
@@ -120,7 +126,7 @@ session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_E
 
 ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'],provider_options = [{'device_id': 0}]  )
 #use this instead for OpenVino
-#ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=OpenVINO_provider_options)
+#ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=OpenVINOExecutionProvider, provider_options=OpenVINO_provider_options)
 
 print(f"\nUsable Providers Session B: {ort_session_B.get_providers()}")
 model_B_dtype = ort_session_B._inputs_meta[0].type
