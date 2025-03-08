@@ -1,8 +1,6 @@
-torch
 pydub
-jieba
-pypinyin
 soundfile
+numpy
 
 # DirectML
 onnxruntime_directml===1.20.1
