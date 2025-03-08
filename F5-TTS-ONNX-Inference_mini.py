@@ -1,12 +1,9 @@
 import re
 import time
-import jieba
 import numpy as np
-import torch
 import onnxruntime
 import soundfile as sf
 from pydub import AudioSegment
-from pypinyin import lazy_pinyin, Style
 import onnxruntime.tools.add_openvino_win_libs as utils
 utils.add_openvino_libs_to_path()
 
@@ -58,53 +55,7 @@ vocab_size = len(vocab_char_map)
 
 
 
-def is_chinese_char(c):
-    cp = ord(c)
-    return (
-        0x4E00 <= cp <= 0x9FFF or    # CJK Unified Ideographs
-        0x3400 <= cp <= 0x4DBF or    # CJK Unified Ideographs Extension A
-        0x20000 <= cp <= 0x2A6DF or  # CJK Unified Ideographs Extension B
-        0x2A700 <= cp <= 0x2B73F or  # CJK Unified Ideographs Extension C
-        0x2B740 <= cp <= 0x2B81F or  # CJK Unified Ideographs Extension D
-        0x2B820 <= cp <= 0x2CEAF or  # CJK Unified Ideographs Extension E
-        0xF900 <= cp <= 0xFAFF or    # CJK Compatibility Ideographs
-        0x2F800 <= cp <= 0x2FA1F     # CJK Compatibility Ideographs Supplement
-    )
 
-
-def convert_char_to_pinyin(text_list, polyphone=True):
-    final_text_list = []
-    merged_trans = str.maketrans({
-        '“': '"', '”': '"', '‘': "'", '’': "'",
-        ';': ','
-    })
-    chinese_punctuations = set("。，、；：？！《》【】—…")
-    for text in text_list:
-        char_list = []
-        text = text.translate(merged_trans)
-        for seg in jieba.cut(text):
-            if seg.isascii():
-                if char_list and len(seg) > 1 and char_list[-1] not in " :'\"":
-                    char_list.append(" ")
-                char_list.extend(seg)
-            elif polyphone and all(is_chinese_char(c) for c in seg):
-                pinyin_list = lazy_pinyin(seg, style=Style.TONE3, tone_sandhi=True)
-                for c in pinyin_list:
-                    if c not in chinese_punctuations:
-                        char_list.append(" ")
-                    char_list.append(c)
-            else:
-                for c in seg:
-                    if c.isascii():
-                        char_list.append(c)
-                    elif c in chinese_punctuations:
-                        char_list.append(c)
-                    else:
-                        char_list.append(" ")
-                        pinyin = lazy_pinyin(c, style=Style.TONE3, tone_sandhi=True)
-                        char_list.extend(pinyin)
-        final_text_list.append(char_list)
-    return final_text_list
 
 
 #Change def list_str_to_idx to get rid of Torch depedency
@@ -194,12 +145,13 @@ audio = np.array(AudioSegment.from_file(reference_audio).set_channels(1).set_fra
 audio_len = len(audio)
 audio = audio.reshape(1, 1, -1)
 
-zh_pause_punc = r"。，、；：？！"
-ref_text_len = len(ref_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc, ref_text))
-gen_text_len = len(gen_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc, gen_text))
+ref_text_len = len(ref_text.encode('utf-8'))
+gen_text_len = len(gen_text.encode('utf-8'))
 ref_audio_len = audio_len // HOP_LENGTH + 1
 max_duration = np.array(ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / SPEED), dtype=np.int64)
-gen_text = convert_char_to_pinyin([ref_text + gen_text])
+
+# wrap to a list since we removed the helper function convert_char_to_pinyin([ref_text + gen_text]) which did that
+gen_text = [ref_text + gen_text]
 text_ids = list_str_to_idx(gen_text, vocab_char_map)
 
 print("\n\nRun F5-TTS by ONNX Runtime.")
