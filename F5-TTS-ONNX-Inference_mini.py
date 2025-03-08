@@ -9,19 +9,25 @@ utils.add_openvino_libs_to_path()
 
 
 # Exported models  https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX
+# For model A, C we should Linux_x64_CPU_F32/F5_Preprocess.ort , F5_Decode.ort    
+# For model B we use Linux_GPU/FP16/F5_Transformer.onnx
+# We take vocab.txt from  https://github.com/SWivid/F5-TTSdata/Emilia_ZH_EN_pinyin/vocab.txt 
+# These models and vocab.txt is expected to be located in model_dir
 
-F5_project_path      = "c:/git/F5-TTS"   # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+model_dir            = "c:/Test/F5/models/mixed"
 
-onnx_model_A         = "c:/Test/F5/models/Linux_x64_CPU_F32/F5_Preprocess.ort"                     
-onnx_model_B         = "C:/Test/F5/models/Linux_GPU/FP16/F5_Transformer.onnx"                      
-onnx_model_C         = "c:/Test/F5/models/Linux_x64_CPU_F32/F5_Decode.ort"                         
+onnx_model_A         = f"{model_dir}/F5_Preprocess.ort"
+onnx_model_B         = f"{model_dir}/F5_Transformer.onnx"
+onnx_model_C         = f"{model_dir}/F5_Decode.ort"
+
+
 cache_dir            = "c:/temp/ov"
  
 
-reference_audio      = "c:/Test/F5/basic_ref_en.wav"     # The reference audio path.
+ref_audio            = "c:/Test/F5/basic_ref_en.wav"     # The reference audio path.
 ref_text             = "Some call me nature, others call me mother nature" 
 gen_text             = "Let's try to generate some audio, its going to be interesting"       # The target TTS.
-generated_audio      = "c:/Test/F5/generated.wav"        # The generated audio path.
+gen_audio            = "c:/Test/F5/generated.wav"        # The generated audio path.
 
 
 HOP_LENGTH = 256                        # Number of samples between successive frames in the STFT
@@ -47,7 +53,7 @@ OpenVINO_provider_options = [
     ]
 
 
-with open(f"{F5_project_path}/data/Emilia_ZH_EN_pinyin/vocab.txt", "r", encoding="utf-8") as f:
+with open(f"{model_dir}/vocab.txt", "r", encoding="utf-8") as f:
     vocab_char_map = {}
     for i, char in enumerate(f):
         vocab_char_map[char[:-1]] = i
@@ -140,8 +146,8 @@ out_name_C0 = out_name_C[0].name
 
 
 # Load the input audio
-print(f"\nReference Audio: {reference_audio}")
-audio = np.array(AudioSegment.from_file(reference_audio).set_channels(1).set_frame_rate(SAMPLE_RATE).get_array_of_samples())
+print(f"\nReference Audio: {ref_audio}")
+audio = np.array(AudioSegment.from_file(ref_audio).set_channels(1).set_frame_rate(SAMPLE_RATE).get_array_of_samples())
 audio_len = len(audio)
 audio = audio.reshape(1, 1, -1)
 
@@ -200,5 +206,5 @@ generated_signal = ort_session_C.run(
 end_count = time.time()
 
 # Save to audio
-sf.write(generated_audio, generated_signal.reshape(-1), SAMPLE_RATE, format='WAVEX')
+sf.write(gen_audio, generated_signal.reshape(-1), SAMPLE_RATE, format='WAVEX')
 print(f"\nAudio generation is complete.\n\nONNXRuntime Time Cost in Seconds:\n{end_count - start_count:.3f}")
