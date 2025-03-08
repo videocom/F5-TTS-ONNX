@@ -7,16 +7,24 @@ import onnxruntime
 import soundfile as sf
 from pydub import AudioSegment
 from pypinyin import lazy_pinyin, Style
+import onnxruntime.tools.add_openvino_win_libs as utils
+utils.add_openvino_libs_to_path()
 
-F5_project_path      = "/home/DakeQQ/Downloads/F5-TTS-main"                                           # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
-onnx_model_A         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Preprocess.ort"                        # The exported onnx model path.
-onnx_model_B         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Transformer.onnx"                      # The exported onnx model path.
-onnx_model_C         = "/home/DakeQQ/Downloads/F5_Optimized/F5_Decode.ort"                            # The exported onnx model path.
 
-reference_audio      = "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/basic_ref_zh.wav"     # The reference audio path.
-generated_audio      = "/home/DakeQQ/Downloads/F5-TTS-main/src/f5_tts/infer/examples/basic/generated.wav"        # The generated audio path.
-ref_text             = "对，这就是我，万人敬仰的太乙真人。"                                                            # The ASR result of reference audio.
-gen_text             = "对，这就是我，万人敬仰的大可奇奇。"                                                            # The target TTS.
+# Exported models  https://drive.google.com/drive/folders/1NxvDDDU0VmcySbbknfaUG5Aj5NH7qUBX
+
+F5_project_path      = "c:/git/F5-TTS"   # The F5-TTS Github project download path.  URL: https://github.com/SWivid/F5-TTS
+
+onnx_model_A         = "c:/Test/F5/models/Linux_x64_CPU_F32/F5_Preprocess.ort"                     
+onnx_model_B         = "C:/Test/F5/models/Linux_GPU/FP16/F5_Transformer.onnx"                      
+onnx_model_C         = "c:/Test/F5/models/Linux_x64_CPU_F32/F5_Decode.ort"                         
+cache_dir            = "c:/temp/ov"
+ 
+
+reference_audio      = "c:/Test/F5/basic_ref_en.wav"     # The reference audio path.
+ref_text             = "Some call me nature, others call me mother nature" 
+gen_text             = "Let's try to generate some audio, its going to be interesting"       # The target TTS.
+generated_audio      = "c:/Test/F5/generated.wav"        # The generated audio path.
 
 
 ORT_Accelerate_Providers = ['OpenVINOExecutionProvider'] # If you have accelerate devices for : ['CUDAExecutionProvider', 'TensorrtExecutionProvider', 'CoreMLExecutionProvider', 'DmlExecutionProvider', 'OpenVINOExecutionProvider', 'ROCMExecutionProvider', 'MIGraphXExecutionProvider', 'AzureExecutionProvider']
@@ -39,12 +47,14 @@ vocab_size = len(vocab_char_map)
 if "OpenVINOExecutionProvider" in ORT_Accelerate_Providers:
     provider_options = [
         {
-            'device_type': 'CPU',
-            'precision': 'ACCURACY',
+            'device_type': 'GPU',
+            #'precision': 'ACCURACY',
+            'precision': 'FP16',
             'num_of_threads': MAX_THREADS,
             'num_streams': 1,
             'enable_opencl_throttling': True,
-            'enable_qdq_optimizer': False
+            'enable_qdq_optimizer': False,
+            'cache_dir': cache_dir
         }
     ]
 elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
@@ -58,7 +68,7 @@ elif "CUDAExecutionProvider" in ORT_Accelerate_Providers:
             'do_copy_in_default_stream': '1',
             'cudnn_conv1d_pad_to_nc1d': '1',
             'enable_cuda_graph': '0',  # Set to '0' to avoid potential errors when enabled.
-            'use_tf32': '0'            
+            'use_tf32': '0'          
         }
     ]
 else:
@@ -114,15 +124,20 @@ def convert_char_to_pinyin(text_list, polyphone=True):
     return final_text_list
 
 
-def list_str_to_idx(
-    text: list[str] | list[list[str]],
-    vocab_char_map: dict[str, int],  # {char: idx}
-    padding_value=-1
-):
+#Change def list_str_to_idx to get rid of Torch depedency
+
+def list_str_to_idx(text, vocab_char_map, padding_value=0):
     get_idx = vocab_char_map.get
-    list_idx_tensors = [torch.tensor([get_idx(c, 0) for c in t], dtype=torch.int32) for t in text]
-    text = torch.nn.utils.rnn.pad_sequence(list_idx_tensors, padding_value=padding_value, batch_first=True)
-    return text
+    list_idx_tensors = [np.array([get_idx(c, 0) for c in t], dtype=np.int32) for t in text]
+
+    max_len = max(len(seq) for seq in list_idx_tensors)
+    padded_text = np.full((len(list_idx_tensors), max_len), padding_value, dtype=np.int32)
+
+    for i, seq in enumerate(list_idx_tensors):
+        padded_text[i, :len(seq)] = seq
+
+    return padded_text
+    
 
 
 # ONNX Runtime settings
@@ -138,6 +153,8 @@ session_opts.add_session_config_entry("session.inter_op.allow_spinning", "1")
 session_opts.add_session_config_entry("session.set_denormal_as_zero", "1")
 
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
+
 ort_session_A = onnxruntime.InferenceSession(onnx_model_A, sess_options=session_opts, providers=['CPUExecutionProvider'], provider_options=None)
 model_type = ort_session_A._inputs_meta[0].type
 in_name_A = ort_session_A.get_inputs()
@@ -153,12 +170,19 @@ out_name_A4 = out_name_A[4].name
 out_name_A5 = out_name_A[5].name
 out_name_A6 = out_name_A[6].name
 
-session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
-ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
-# For DirectML + AMD GPU, 
-# pip install onnxruntime-directml --upgrade
-# ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'])
-print(f"\nUsable Providers: {ort_session_B.get_providers()}")
+#session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_BASIC
+
+session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+#https://onnxruntime.ai/docs/execution-providers/OpenVINO-ExecutionProvider.html#onnxruntime-graph-level-optimization
+#session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+
+
+
+ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=['DmlExecutionProvider'],provider_options = [{'device_id': 0}]  )
+#use this instead for OpenVino
+#ort_session_B = onnxruntime.InferenceSession(onnx_model_B, sess_options=session_opts, providers=ORT_Accelerate_Providers, provider_options=provider_options)
+
+print(f"\nUsable Providers Session B: {ort_session_B.get_providers()}")
 model_dtype = ort_session_B._inputs_meta[0].type
 in_name_B = ort_session_B.get_inputs()
 out_name_B = ort_session_B.get_outputs()
@@ -172,6 +196,7 @@ in_name_B6 = in_name_B[6].name
 out_name_B0 = out_name_B[0].name
 
 session_opts.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_ENABLE_ALL
+
 ort_session_C = onnxruntime.InferenceSession(onnx_model_C, sess_options=session_opts, providers=['CPUExecutionProvider'], provider_options=None)
 in_name_C = ort_session_C.get_inputs()
 out_name_C = ort_session_C.get_outputs()
@@ -192,7 +217,7 @@ gen_text_len = len(gen_text.encode('utf-8')) + 3 * len(re.findall(zh_pause_punc,
 ref_audio_len = audio_len // HOP_LENGTH + 1
 max_duration = np.array(ref_audio_len + int(ref_audio_len / ref_text_len * gen_text_len / SPEED), dtype=np.int64)
 gen_text = convert_char_to_pinyin([ref_text + gen_text])
-text_ids = list_str_to_idx(gen_text, vocab_char_map).numpy()
+text_ids = list_str_to_idx(gen_text, vocab_char_map)
 
 print("\n\nRun F5-TTS by ONNX Runtime.")
 start_count = time.time()
@@ -211,6 +236,7 @@ if 'float16' in model_dtype:
     cat_mel_text = cat_mel_text.astype(np.float16)
     cat_mel_text_drop = cat_mel_text_drop.astype(np.float16)
     qk_rotated_empty = qk_rotated_empty.astype(np.float16)
+
 
 if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
     noise = onnxruntime.OrtValue.ortvalue_from_numpy(noise, 'cuda', DEVICE_ID)
@@ -264,7 +290,7 @@ if "CUDAExecutionProvider" in ORT_Accelerate_Providers:
     noise = onnxruntime.OrtValue.numpy(noise)
 else:
     for i in range(NFE_STEP):
-        print(f"NFE_STEP: {i}")
+        print(f"NFE_STEP: {i} of {NFE_STEP}")
         noise = ort_session_B.run(
             [out_name_B0],
             {
@@ -276,10 +302,10 @@ else:
                 in_name_B5: qk_rotated_empty,
                 in_name_B6: np.array(i, dtype=np.int32)
             })[0]
-
-if 'float16' in model_dtype:
+            
+if 'float16' in model_dtype:    # when using fp32 for model C
     noise = noise.astype(np.float32)
-    
+        
 generated_signal = ort_session_C.run(
         [out_name_C0],
         {
